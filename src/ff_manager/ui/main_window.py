@@ -8,14 +8,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtSql import QSqlTableModel
 from PySide6.QtCore import Qt, QModelIndex, QTimer
 
-from config import (WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
-from db.migrations import ensure_schema_and_migrate
+from ff_manager.config import (WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
+from ff_manager.db.migrations import ensure_schema_and_migrate
 
-from ui.panels import build_buttons_column,ButtonType
-from ui.styles import apply_table_style
-from ui.edit_grid_widget import EditGridWidget
+from ff_manager.ui.panels import build_buttons_column,ButtonType
+from ff_manager.ui.styles import apply_table_style
+from ff_manager.ui.edit_grid_widget import EditGridWidget
 
-from db.aggregate import rebuild_daily_for_date, normalize_date
+from ff_manager.db.aggregate import rebuild_daily_for_date, normalize_date
 
 class MainWindow(QMainWindow):
     def __init__(self, db):

@@ -2,11 +2,11 @@
 import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from config import DB_PATH
-from db.connection import get_db
-from ui.main_window import MainWindow
+from ff_manager.config import DB_PATH
+from ff_manager.db.connection import get_db
+from ff_manager.ui.main_window import MainWindow
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     try:
         db = get_db(DB_PATH)
@@ -17,3 +17,8 @@ if __name__ == "__main__":
     w = MainWindow(db)
     w.show()
     sys.exit(app.exec())
+
+
+
+if __name__ == "__main__":
+    main()
