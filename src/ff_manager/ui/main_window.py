@@ -48,16 +48,3 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "サマリ更新", f"{date_iso} の日次サマリ更新に失敗しました。")
 
 
-     
-    # def open_edit_grid(self):
-    #     dlg = EditGridDialog(self.db, self)
-    #     if dlg.exec() == QDialog.Accepted:
-    #         # ダイアログで保存が完了 → 指定日のサマリを再計算（商品＆客数）
-    #         date_iso = dlg._date_iso()  # ダイアログの選択日
-    #         if date_iso:
-    #             if not rebuild_daily_for_date(self.db, date_iso):
-    #                 QMessageBox.warning(self, "サマリ更新", f"{date_iso} の日次サマリ更新に失敗しました。")
-    #         # メインのモデルを再読込（表示を更新したい場合）
-    #         if hasattr(self, "model"):
-    #             self.model.select()
-    

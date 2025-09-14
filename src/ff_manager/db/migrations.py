@@ -12,7 +12,9 @@ def ensure_schema_and_migrate(db, table: str):
             q.exec("""
             CREATE TABLE IF NOT EXISTS items(
               item_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-              item_name TEXT NOT NULL UNIQUE
+              item_name TEXT NOT NULL UNIQUE,
+              price INTEGER NOT NULL,
+              freshness INTEGER NOT NULL
             )""")
             q.exec("CREATE INDEX IF NOT EXISTS idx_items_name ON items(item_name)")
             _set_schema_version(db, 1); cur = 1

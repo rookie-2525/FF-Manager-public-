@@ -2,11 +2,14 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QDateEdit, QComboBox, QTableWidget,
     QTableWidgetItem, QPushButton, QLabel, QMessageBox, QSizePolicy,
-    QHeaderView, QAbstractScrollArea,
+    QHeaderView, QAbstractScrollArea, QInputDialog,
 )
 from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QIntValidator
 from PySide6.QtSql import QSqlQuery
+
+from ff_manager.db.repositories.items_repo import list_item_names, get_item_id_by_name, add_item
+
 
 METRICS = ["customer","prepared", "sold", "discarded", "stock"]
 HOURS = list(range(24))
@@ -24,8 +27,10 @@ class EditGridWidget(QWidget):
         self.date_edit.setDate(QDate.currentDate())
 
         self.item_combo = QComboBox()
-        self.item_combo.setEditable(True)
+        self.item_combo.setEditable(False)
         self._reload_items()
+
+        self.btn_add_item=QPushButton("＋追加")
 
         self.btn_load = QPushButton("読み込み")
         self.btn_save = QPushButton("保存")
@@ -37,6 +42,7 @@ class EditGridWidget(QWidget):
         head.addSpacing(12)
         head.addWidget(QLabel("商品:"))
         head.addWidget(self.item_combo)
+        head.addWidget(self.btn_add_item)
         head.addStretch()
         head.addWidget(self.btn_load)
 
@@ -65,11 +71,12 @@ class EditGridWidget(QWidget):
         self.btn_load.clicked.connect(self.load_current)
         self.btn_save.clicked.connect(self.save_current)
         self.btn_revert.clicked.connect(self.load_current)
+        self.btn_add_item.clicked.connect(self.on_add_item)
 
         self._clear_tables()
 
 
-        # 作成直後に追加
+  
         hdr = self.table.horizontalHeader()
         hdr.setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
         hdr.setMinimumSectionSize(20)                     # 最小を小さめに
@@ -111,24 +118,46 @@ class EditGridWidget(QWidget):
     def _item_name(self) -> str:
         return (self.item_combo.currentText() or "").strip()
 
-    def _get_or_create_item_id(self, name: str) -> int:
-        if not name:
-            return -1
-        q = QSqlQuery(self.db)
-        q.prepare("INSERT INTO items(item_name) VALUES(:n) ON CONFLICT(item_name) DO NOTHING")
-        q.bindValue(":n", name); q.exec()
-        q.prepare("SELECT item_id FROM items WHERE item_name=:n")
-        q.bindValue(":n", name); q.exec()
-        return q.next() and int(q.value(0)) or -1
+    # def (self, name: str) -> int:
+    #     if not name:
+    #         return -1
+    #     q = QSqlQuery(self.db)
+    #     q.prepare("INSERT INTO items(item_name) VALUES(:n) ON CONFLICT(item_name) DO NOTHING")
+    #     q.bindValue(":n", name); q.exec()
+    #     q.prepare("SELECT item_id FROM items WHERE item_name=:n")
+    #     q.bindValue(":n", name); q.exec()
+    #     return q.next() and int(q.value(0)) or -1
+
+    def _get_item_id(self, name: str) -> int | None:
+        return get_item_id_by_name(self.db, name)
 
     def _reload_items(self):
+        """
+
+        Args:
+            url (str): 取得対象のURL。
+            timeout (int, optional): タイムアウト秒数（デフォルトは30秒）。
+
+        Returns:
+            dict: パース済みのJSONレスポンス。
+
+        Raises:
+            ValueError: レスポンスが正しいJSONでない場合。
+        """
         cur = self._item_name()
         self.item_combo.clear()
-        q = QSqlQuery(self.db); q.exec("SELECT item_name FROM items ORDER BY item_name")
-        while q.next():
-            self.item_combo.addItem(q.value(0))
+        for nm in list_item_names(self.db):
+            self.item_combo.addItem(nm)
         if cur:
-            self.item_combo.setCurrentText(cur)
+            # 現在の選択を維持
+            i = self.item_combo.findText(cur)
+            if i >= 0:
+                self.item_combo.setCurrentIndex(i)
+        # q = QSqlQuery(self.db); q.exec("SELECT item_name FROM items ORDER BY item_name")
+        # while q.next():
+        #     self.item_combo.addItem(q.value(0))
+        # if cur:
+        #     self.item_combo.setCurrentText(cur)
 
     def _setup_table_for_int(self, table: QTableWidget):
         validator = QIntValidator(0, 1_000_000, self)
@@ -162,9 +191,9 @@ class EditGridWidget(QWidget):
         if not d or not name:
             self._clear_tables(); return
 
-        item_id = self._get_or_create_item_id(name)
+        item_id = self._get_item_id(name)
         if item_id < 0:
-            QMessageBox.information(self, "商品未指定", "商品名を入力してください。")
+            QMessageBox.information(self, "未登録", "この商品は未登録です。『＋追加』から登録してください。")
             return
 
         self._clear_tables()
@@ -216,9 +245,9 @@ class EditGridWidget(QWidget):
         if not d or not name:
             QMessageBox.information(self, "入力不足", "日付と商品名を入力してください。"); return
 
-        item_id = self._get_or_create_item_id(name)
+        item_id = self._get_item_id(name)
         if item_id < 0:
-            QMessageBox.warning(self, "商品エラー", "商品IDを取得できませんでした。"); return
+            QMessageBox.warning(self, "未登録", "この商品は未登録です。『＋追加』から登録してください。"); return
 
         self.db.transaction()
         try:
@@ -257,4 +286,21 @@ class EditGridWidget(QWidget):
         except Exception as e:
             self.db.rollback()
             QMessageBox.warning(self, "保存失敗", str(e))
+
+
+    # ---------- item ----------
+    def on_add_item(self):
+        text, ok = QInputDialog.getText(self, "商品を追加", "商品名：")
+        name = (text or "").strip()
+        if not ok or not name:
+            return
+        if not add_item(self.db, name):
+            QMessageBox.warning(self, "追加失敗", "同名の商品が既に存在する可能性があります。")
+            return
+        self._reload_items()
+        # 追加した商品を選択
+        idx = self.item_combo.findText(name)
+        if idx >= 0:
+            self.item_combo.setCurrentIndex(idx)
+
 
