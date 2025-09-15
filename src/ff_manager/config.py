@@ -18,5 +18,4 @@ HEADER_JP={
     "sold":"販売数",
     "discarded":"廃棄数",
     "stock":"陳列数",
-
 }

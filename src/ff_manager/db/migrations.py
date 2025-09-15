@@ -11,10 +11,13 @@ def ensure_schema_and_migrate(db, table: str):
         if cur < 1:
             q.exec("""
             CREATE TABLE IF NOT EXISTS items(
-              item_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-              item_name TEXT NOT NULL UNIQUE,
-              price INTEGER NOT NULL,
-              freshness INTEGER NOT NULL
+                item_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_name     TEXT NOT NULL UNIQUE,
+                price         INTEGER NOT NULL,
+                freshness     INTEGER,
+                sales_class   TEXT CHECK(sales_class IN ('normal','limited')), 
+                item_type     TEXT CHECK(item_type IN ('ambient','heated','chukaman','oden')),
+                is_active     INTEGER NOT NULL DEFAULT 1
             )""")
             q.exec("CREATE INDEX IF NOT EXISTS idx_items_name ON items(item_name)")
             _set_schema_version(db, 1); cur = 1
@@ -23,13 +26,13 @@ def ensure_schema_and_migrate(db, table: str):
         if cur < 2:
             q.exec("""
             CREATE TABLE IF NOT EXISTS fact_hourly_long(
-              date    TEXT    NOT NULL,     -- 'YYYY-MM-DD'
-              hour    INTEGER NOT NULL,     -- 0..23
-              item_id INTEGER NOT NULL,
-              metric  TEXT    NOT NULL CHECK(metric IN ('prepared','sold','discarded','stock')),
-              value   INTEGER NOT NULL DEFAULT 0,
-              PRIMARY KEY(date, hour, item_id, metric),
-              FOREIGN KEY(item_id) REFERENCES items(item_id) ON DELETE RESTRICT
+                date    TEXT    NOT NULL,     -- 'YYYY-MM-DD'
+                hour    INTEGER NOT NULL,     -- 0..23
+                item_id INTEGER NOT NULL,
+                metric  TEXT    NOT NULL CHECK(metric IN ('prepared','sold','discarded','stock')),
+                value   INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(date, hour, item_id, metric),
+                FOREIGN KEY(item_id) REFERENCES items(item_id) ON DELETE RESTRICT
             )""")
             q.exec("CREATE INDEX IF NOT EXISTS idx_fhl_item_date ON fact_hourly_long(item_id, date)")
             _set_schema_version(db, 2); cur = 2
@@ -38,10 +41,10 @@ def ensure_schema_and_migrate(db, table: str):
         if cur < 3:
             q.exec("""
             CREATE TABLE IF NOT EXISTS fact_hourly_customer(
-              date TEXT NOT NULL,
-              hour INTEGER NOT NULL,
-              customer_count INTEGER NOT NULL DEFAULT 0,
-              PRIMARY KEY(date, hour)
+                date TEXT NOT NULL,
+                hour INTEGER NOT NULL,
+                customer_count INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(date, hour)
             )""")
             _set_schema_version(db, 3); cur = 3
 
@@ -49,14 +52,14 @@ def ensure_schema_and_migrate(db, table: str):
         if cur < 4:
             q.exec("""
             CREATE TABLE IF NOT EXISTS fact_daily(
-              date TEXT NOT NULL,
-              item_id INTEGER NOT NULL,
-              prepared  INTEGER NOT NULL DEFAULT 0,
-              sold      INTEGER NOT NULL DEFAULT 0,
-              discarded INTEGER NOT NULL DEFAULT 0,
-              stock_end INTEGER NOT NULL DEFAULT 0,
-              PRIMARY KEY(date, item_id),
-              FOREIGN KEY(item_id) REFERENCES items(item_id) ON DELETE RESTRICT
+                date TEXT NOT NULL,
+                item_id INTEGER NOT NULL,
+                prepared  INTEGER NOT NULL DEFAULT 0,
+                sold      INTEGER NOT NULL DEFAULT 0,
+                discarded INTEGER NOT NULL DEFAULT 0,
+                stock_end INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(date, item_id),
+                FOREIGN KEY(item_id) REFERENCES items(item_id) ON DELETE RESTRICT
             )""")
             q.exec("CREATE INDEX IF NOT EXISTS idx_fd_item_date ON fact_daily(item_id, date)")
             _set_schema_version(db, 4); cur = 4
@@ -65,8 +68,8 @@ def ensure_schema_and_migrate(db, table: str):
         if cur < 5:
             q.exec("""
             CREATE TABLE IF NOT EXISTS fact_daily_customer(
-              date TEXT PRIMARY KEY,
-              customer_count INTEGER NOT NULL DEFAULT 0
+                date TEXT PRIMARY KEY,
+                customer_count INTEGER NOT NULL DEFAULT 0
             )""")
             _set_schema_version(db, 5); cur = 5
 
