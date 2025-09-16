@@ -17,7 +17,7 @@ HOURS = list(range(24))
 class EditGridWidget(QWidget):
     saved = Signal(str)   # 保存完了時に 'YYYY-MM-DD' を通知
 
-    def __init__(self, db, parent=None):
+    def __init__(self, db,stacked_widget, parent=None):
         super().__init__(parent)
         self.db = db
 
@@ -30,11 +30,13 @@ class EditGridWidget(QWidget):
         self.item_combo.setEditable(False)
         self._reload_items()
 
-        self.btn_add_item=QPushButton("＋追加")
+        # self.btn_add_item=QPushButton("＋追加")
 
         self.btn_load = QPushButton("読み込み")
         self.btn_save = QPushButton("保存")
         self.btn_revert = QPushButton("やり直し")
+        self.btn_back = QPushButton("戻る")
+
 
         head = QHBoxLayout()
         head.addWidget(QLabel("日付:"))
@@ -42,7 +44,7 @@ class EditGridWidget(QWidget):
         head.addSpacing(12)
         head.addWidget(QLabel("商品:"))
         head.addWidget(self.item_combo)
-        head.addWidget(self.btn_add_item)
+        # head.addWidget(self.btn_add_item)
         head.addStretch()
         head.addWidget(self.btn_load)
 
@@ -58,6 +60,7 @@ class EditGridWidget(QWidget):
         grids.addWidget(self.table)
 
         foot = QHBoxLayout()
+        foot.addWidget(self.btn_back)
         foot.addStretch()
         foot.addWidget(self.btn_save)
         foot.addWidget(self.btn_revert)
@@ -71,7 +74,7 @@ class EditGridWidget(QWidget):
         self.btn_load.clicked.connect(self.load_current)
         self.btn_save.clicked.connect(self.save_current)
         self.btn_revert.clicked.connect(self.load_current)
-        self.btn_add_item.clicked.connect(self.on_add_item)
+        self.btn_back.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
 
         self._clear_tables()
 

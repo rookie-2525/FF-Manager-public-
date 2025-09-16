@@ -1,7 +1,7 @@
 # ui/main_window.py
 import sys
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QStackedWidget,
     QPushButton, QTableView, QMessageBox, QAbstractItemView, QSplitter, QHeaderView,
     QDialog,
 )
@@ -14,6 +14,8 @@ from ff_manager.db.migrations import ensure_schema_and_migrate
 from ff_manager.ui.panels import build_buttons_column,ButtonType
 from ff_manager.ui.styles import apply_table_style
 from ff_manager.ui.edit_grid_widget import EditGridWidget
+from ff_manager.ui.items_widget import ItemsWidget
+from ff_manager.ui.menu_widget import MenuWidget
 
 from ff_manager.db.aggregate import rebuild_daily_for_date, normalize_date
 
@@ -33,8 +35,14 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Migration Error", str(e))
             sys.exit(1)
 
-        self.grid = EditGridWidget(self.db)
-        self.setCentralWidget(self.grid)
+        self.stack = QStackedWidget()
+        self.stack.addWidget(MenuWidget(self.stack))   # index 0
+        self.stack.addWidget(ItemsWidget(self.db,self.stack))      # index 1
+        self.stack.addWidget(EditGridWidget(self.db,self.stack))   # index 2
+        self.setCentralWidget(self.stack)
+
+        self.grid = EditGridWidget(self.db,self.stack)
+        self.setCentralWidget(self.stack)
 
         # 「保存完了」を受けて日次サマリ再計算（アプリ側の責務）
         self.grid.saved.connect(self._on_saved)
