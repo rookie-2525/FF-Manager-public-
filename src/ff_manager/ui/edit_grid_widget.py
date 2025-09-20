@@ -30,9 +30,10 @@ class EditGridWidget(QWidget):
         self.item_combo.setEditable(False)
         self._reload_items()
 
-        # self.btn_add_item=QPushButton("＋追加")
-
-        self.btn_load = QPushButton("読み込み")
+        self.btn_prev_day=QPushButton("<")
+        self.btn_next_day=QPushButton(">")
+        self.btn_prev_month=QPushButton("<<")
+        self.btn_next_month=QPushButton(">>")
         self.btn_save = QPushButton("保存")
         self.btn_revert = QPushButton("やり直し")
         self.btn_back = QPushButton("戻る")
@@ -40,13 +41,19 @@ class EditGridWidget(QWidget):
 
         head = QHBoxLayout()
         head.addWidget(QLabel("日付:"))
+        head.addWidget(self.btn_prev_month)
+        head.addWidget(self.btn_prev_day)
         head.addWidget(self.date_edit)
+        head.addWidget(self.btn_next_day)
+        head.addWidget(self.btn_next_month)
         head.addSpacing(12)
         head.addWidget(QLabel("商品:"))
         head.addWidget(self.item_combo)
-        # head.addWidget(self.btn_add_item)
         head.addStretch()
-        head.addWidget(self.btn_load)
+
+        for btn in (self.btn_prev_month, self.btn_prev_day, self.btn_next_day, self.btn_next_month):
+            btn.setFixedSize(28, 24)
+
 
         # グリッド
         self.table = QTableWidget(len(METRICS), len(HOURS))
@@ -71,10 +78,22 @@ class EditGridWidget(QWidget):
         root.addLayout(foot)
 
         # signal
-        self.btn_load.clicked.connect(self.load_current)
         self.btn_save.clicked.connect(self.save_current)
         self.btn_revert.clicked.connect(self.load_current)
         self.btn_back.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+
+        # 日単位移動
+        self.btn_prev_day.clicked.connect(lambda: self._shift_date(days=-1))
+        self.btn_next_day.clicked.connect(lambda: self._shift_date(days=1))
+
+        # 月単位移動
+        self.btn_prev_month.clicked.connect(lambda: self._shift_date(months=-1))
+        self.btn_next_month.clicked.connect(lambda: self._shift_date(months=1))
+
+        # 日付や商品が変わったら自動読み込み
+        self.date_edit.dateChanged.connect(self.load_current)
+        self.item_combo.currentTextChanged.connect(self.load_current)
+
 
         self._clear_tables()
 
@@ -306,4 +325,14 @@ class EditGridWidget(QWidget):
         if idx >= 0:
             self.item_combo.setCurrentIndex(idx)
 
+
+    # ---------- day ----------
+    def _shift_date(self, days: int = 0, months: int = 0):
+        """日付を days 日または months ヶ月ずらす"""
+        d = self.date_edit.date()
+        if days:
+            d = d.addDays(days)
+        if months:
+            d = d.addMonths(months)
+        self.date_edit.setDate(d)  
 
