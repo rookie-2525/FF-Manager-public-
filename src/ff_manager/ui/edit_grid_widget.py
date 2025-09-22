@@ -96,6 +96,7 @@ class EditGridWidget(QWidget):
 
 
         self._clear_tables()
+        self.load_current()
 
 
   
@@ -140,18 +141,6 @@ class EditGridWidget(QWidget):
     def _item_name(self) -> str:
         return (self.item_combo.currentText() or "").strip()
 
-    # def (self, name: str) -> int:
-    #     if not name:
-    #         return -1
-    #     q = QSqlQuery(self.db)
-    #     q.prepare("INSERT INTO items(item_name) VALUES(:n) ON CONFLICT(item_name) DO NOTHING")
-    #     q.bindValue(":n", name); q.exec()
-    #     q.prepare("SELECT item_id FROM items WHERE item_name=:n")
-    #     q.bindValue(":n", name); q.exec()
-    #     return q.next() and int(q.value(0)) or -1
-
-    # def _get_item_id(self, name: str) -> int | None:
-    #     return ItemsRepository.get_item_id_by_name(self.db, name)
 
     def _reload_items(self):
         """
@@ -218,9 +207,9 @@ class EditGridWidget(QWidget):
         if not d or not name:
             self._clear_tables(); return
 
-        item_id = self._get_item_id(name)
+        item_id = ItemsRepository(self.db).get_item_id_by_name(name)
         if item_id < 0:
-            QMessageBox.information(self, "未登録", "この商品は未登録です。『＋追加』から登録してください。")
+            QMessageBox.information(self, "未登録", "この商品は未登録です。")
             return
 
         self._clear_tables()
@@ -272,7 +261,7 @@ class EditGridWidget(QWidget):
         if not d or not name:
             QMessageBox.information(self, "入力不足", "日付と商品名を入力してください。"); return
 
-        item_id = self._get_item_id(name)
+        item_id = ItemsRepository(self.db).get_item_id_by_name(name)
         if item_id < 0:
             QMessageBox.warning(self, "未登録", "この商品は未登録です。『＋追加』から登録してください。"); return
 
@@ -283,7 +272,7 @@ class EditGridWidget(QWidget):
             q.prepare("""
                 INSERT INTO fact_hourly_long(date,hour,item_id,metric,value)
                 VALUES(:d,:h,:it,:m,:v)
-                ON CONFLICT(date,hour,item_id,metric) DO UPDATE SET value=excluded.value
+                ON CONFLICT(date, hour, item_id, metric) DO UPDATE SET value= excluded.value
             """)
             metric_of_row = {1:"prepared", 2:"sold", 3:"discarded", 4:"stock"}
             for r in (1,2,3,4):
@@ -306,6 +295,19 @@ class EditGridWidget(QWidget):
                 c = int(self.table.item(0, h).text() or 0)
                 qc.bindValue(":d", d); qc.bindValue(":h", h); qc.bindValue(":c", c)
                 if not qc.exec(): raise RuntimeError(qc.lastError().text())
+
+            # 3) 日次客数サマリを更新
+            qd = QSqlQuery(self.db)
+            qd.prepare("""
+                INSERT INTO fact_daily_customer(date, customer_count)
+                VALUES(:d, (
+                    SELECT SUM(customer_count) FROM fact_hourly_customer WHERE date=:d
+                ))
+                ON CONFLICT(date) DO UPDATE SET customer_count=excluded.customer_count
+            """)
+            qd.bindValue(":d", d)
+            if not qd.exec():
+                raise RuntimeError(qd.lastError().text())
 
             self.db.commit()
             self.saved.emit(d)
