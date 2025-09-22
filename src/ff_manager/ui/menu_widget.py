@@ -20,11 +20,15 @@ class MenuWidget(QWidget):
 
         btns = QVBoxLayout()
         btns.addWidget(self.btn_item_info)
-        # btns.addStretch()
         btns.addWidget(self.btn_item_data)
+        btns.addStretch()
 
         layout = QVBoxLayout(self)
         layout.addLayout(btns)
+
+        for btn in (self.btn_item_info,self.btn_item_data):
+            btn.setFixedSize(400,100)
+
 
         # シグナル
         self.btn_item_info.clicked.connect(lambda: stacked_widget.setCurrentIndex(1))
