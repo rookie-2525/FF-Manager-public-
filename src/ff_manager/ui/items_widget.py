@@ -1,8 +1,9 @@
 # ui/items_widget.py
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableView,
-    QPushButton, QMessageBox, QAbstractItemView, QInputDialog,
-    QDialog, QFormLayout, QLineEdit, QComboBox, QDialogButtonBox
+    QPushButton, QMessageBox, QAbstractItemView, QHeaderView,
+    QDialog, QFormLayout, QLineEdit, QComboBox, QDialogButtonBox,
+    QCheckBox
 )
 from PySide6.QtSql import QSqlTableModel, QSqlQuery
 
@@ -24,7 +25,10 @@ class ItemsWidget(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.view.setEditTriggers(QAbstractItemView.DoubleClicked)  # ダブルクリックで編集
-        self.view.horizontalHeader().setStretchLastSection(True)
+
+        header=self.view.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setSectionResizeMode(self.model.record().indexOf("item_name"), QHeaderView.Stretch)  # 広めに設定
 
         # ボタン
         self.btn_add = QPushButton("追加")
@@ -108,27 +112,38 @@ class ItemDialog(QDialog):
         super().__init__(db)
         self.setWindowTitle("商品を追加")
 
-        # 入力フィールド
+        # # 入力フィールド
         self.name_edit = QLineEdit()
         self.price_edit = QLineEdit()
         self.price_edit.setPlaceholderText("整数で入力")
-        self.freshness_edit = QLineEdit()
+
+        self.freshness_combo = QComboBox()
+        self.freshness_combo.addItem("4時間","4")
+        self.freshness_combo.addItem("6時間","6")
+        self.freshness_combo.addItem("7時間","7")
+
         self.sales_class_combo = QComboBox()
-        self.sales_class_combo.addItems(["normal", "limited"])
+        self.sales_class_combo.addItem("通常", "normal")
+        self.sales_class_combo.addItem("限定", "limited")
+
         self.item_type_combo = QComboBox()
-        self.item_type_combo.addItems(["ambient", "heated"])
-        self.is_active_combo = QComboBox()
-        self.is_active_combo.addItems(["1", "0"])  # 1=有効, 0=無効
+        self.item_type_combo.addItem("常温", "ambient")
+        self.item_type_combo.addItem("加温", "heated")
+        self.item_type_combo.addItem("中華まん", "chukaman")
+        self.item_type_combo.addItem("おでん", "oden")
+
+        self.is_active_check = QCheckBox("販売中")
+        self.is_active_check.setChecked(False) 
 
         # レイアウト
         form = QFormLayout()
         form.addRow("商品名:", self.name_edit)
-        form.addRow("価格:", self.price_edit)
-        form.addRow("鮮度:", self.freshness_edit),
+        form.addRow("価格(税抜):", self.price_edit)
+        form.addRow("鮮度:", self.freshness_combo),
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         form.addRow("販売区分:", self.sales_class_combo)
         form.addRow("商品タイプ:", self.item_type_combo)
-        form.addRow("販売中:", self.is_active_combo)
+        form.addRow("", self.is_active_check)
 
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -141,10 +156,9 @@ class ItemDialog(QDialog):
         return {
             "item_name": self.name_edit.text().strip(),
             "price": int(self.price_edit.text() or 0),
-            "freshness": int(self.freshness_edit.text() or 0),
-            "sales_class": self.sales_class_combo.currentText(),
-            "item_type": self.item_type_combo.currentText(),
+            "freshness": int(self.freshness_combo.currentData() or 0),
+            "sales_class": self.sales_class_combo.currentData(),
+            "item_type": self.item_type_combo.currentData(),
             "is_active": int(self.is_active_combo.currentText()),
         }
 
-    
