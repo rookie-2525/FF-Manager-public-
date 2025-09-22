@@ -185,7 +185,7 @@ class EditGridWidget(QWidget):
             table (QTableWidget): 取得対象のQTableWidget
 
         Returns:
-        
+
         """
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(table.rowCount()):
@@ -313,22 +313,6 @@ class EditGridWidget(QWidget):
         except Exception as e:
             self.db.rollback()
             QMessageBox.warning(self, "保存失敗", str(e))
-
-
-    # ---------- item ----------
-    def on_add_item(self):
-        text, ok = QInputDialog.getText(self, "商品を追加", "商品名：")
-        name = (text or "").strip()
-        if not ok or not name:
-            return
-        if not add_item(self.db, name):
-            QMessageBox.warning(self, "追加失敗", "同名の商品が既に存在する可能性があります。")
-            return
-        self._reload_items()
-        # 追加した商品を選択
-        idx = self.item_combo.findText(name)
-        if idx >= 0:
-            self.item_combo.setCurrentIndex(idx)
 
 
     # ---------- day ----------
