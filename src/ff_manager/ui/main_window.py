@@ -44,12 +44,13 @@ class MainWindow(QMainWindow):
         self.grid = EditGridWidget(self.db,self.stack)
         self.setCentralWidget(self.stack)
 
-        # 「保存完了」を受けて日次サマリ再計算（アプリ側の責務）
-        self.grid.saved.connect(self._on_saved)
+        # # 「保存完了」を受けて日次サマリ再計算（アプリ側の責務）
+        # self.grid.saved.connect(self._on_saved)
 
 
    
     def _on_saved(self, date_iso: str):
+        
             if not rebuild_daily_for_date(self.db, date_iso):
                 # 失敗しても編集結果は保存済み。通知のみ。
                 from PySide6.QtWidgets import QMessageBox

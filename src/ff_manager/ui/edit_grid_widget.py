@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QIntValidator
 from PySide6.QtSql import QSqlQuery
 
-from ff_manager.db.repositories.items_repo import list_item_names, get_item_id_by_name, add_item
+from ff_manager.db.repositories.items_repo import ItemsRepository
 
 
 METRICS = ["customer","prepared", "sold", "discarded", "stock"]
@@ -150,25 +150,21 @@ class EditGridWidget(QWidget):
     #     q.bindValue(":n", name); q.exec()
     #     return q.next() and int(q.value(0)) or -1
 
-    def _get_item_id(self, name: str) -> int | None:
-        return get_item_id_by_name(self.db, name)
+    # def _get_item_id(self, name: str) -> int | None:
+    #     return ItemsRepository.get_item_id_by_name(self.db, name)
 
     def _reload_items(self):
         """
-
         Args:
             url (str): 取得対象のURL。
             timeout (int, optional): タイムアウト秒数（デフォルトは30秒）。
 
         Returns:
             dict: パース済みのJSONレスポンス。
-
-        Raises:
-            ValueError: レスポンスが正しいJSONでない場合。
         """
         cur = self._item_name()
         self.item_combo.clear()
-        for nm in list_item_names(self.db):
+        for nm in ItemsRepository.list_item_names(self.db):
             self.item_combo.addItem(nm)
         if cur:
             # 現在の選択を維持
@@ -182,6 +178,15 @@ class EditGridWidget(QWidget):
         #     self.item_combo.setCurrentText(cur)
 
     def _setup_table_for_int(self, table: QTableWidget):
+        """
+        テーブルの初期化
+
+        Args:
+            table (QTableWidget): 取得対象のQTableWidget
+
+        Returns:
+        
+        """
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(table.rowCount()):
             for c in range(table.columnCount()):
