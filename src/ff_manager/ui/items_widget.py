@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableView,
     QPushButton, QMessageBox, QAbstractItemView, QHeaderView,
     QDialog, QFormLayout, QLineEdit, QComboBox, QDialogButtonBox,
-    QCheckBox
+    QCheckBox,QLabel
 )
 from PySide6.QtCore import Qt
 from PySide6.QtSql import QSqlTableModel, QSqlQuery
@@ -14,8 +14,21 @@ class ItemsWidget(QWidget):
     def __init__(self, db,stacked_widget, parent=None):
         super().__init__(parent)
 
+        # ==== database ====
         self.db=db
 
+        # === search functionality ===
+        self.search_edit = QLineEdit()
+        self.search_edit.setPlaceholderText("商品名で検索...")
+        self.search_edit.textChanged.connect(self.search_items)
+
+        search_layout = QHBoxLayout()
+        search_layout.addStretch()
+        search_layout.addWidget(QLabel("検索:"))
+        search_layout.addWidget(self.search_edit)
+
+
+        # === tables ===
         self.model = QSqlTableModel(self, db)
         self.model.setTable("items")
         self.model.setEditStrategy(QSqlTableModel.OnManualSubmit)
@@ -34,7 +47,7 @@ class ItemsWidget(QWidget):
         
 
 
-        # ボタン/
+        # === buttons ===
         self.btn_add = QPushButton("追加")
         self.btn_delete = QPushButton("削除")
         self.btn_save = QPushButton("保存")
@@ -50,16 +63,32 @@ class ItemsWidget(QWidget):
         btns.addWidget(self.btn_save)
         btns.addWidget(self.btn_revert)
 
+        # ==== layout ====
         layout = QVBoxLayout(self)
+        layout.addLayout(search_layout)
         layout.addWidget(self.view)
         layout.addLayout(btns)
 
-        # シグナル/
+        # ==== signal ====
         self.btn_add.clicked.connect(self.on_add_item)
         self.btn_delete.clicked.connect(self.delete_item)
         self.btn_save.clicked.connect(self.save_changes)
         self.btn_revert.clicked.connect(self.revert_changes)
         self.btn_back.clicked.connect(lambda: stacked_widget.setCurrentIndex(0))
+
+
+    # ------------------------------
+    # function
+    # ------------------------------
+    def search_items(self, text: str):
+        if text.strip():
+            # 部分一致検索（SQLiteのLIKEは大文字小文字を区別しない）
+            self.model.setFilter(f"item_name LIKE '%{text}%'")
+        else:
+            # 空なら全件表示
+            self.model.setFilter("")
+        self.model.select()
+
 
     def add_item(self):
         row = self.model.rowCount()
@@ -109,7 +138,11 @@ class ItemsWidget(QWidget):
             # self.model.select()  # 再読み込み
 
 
-    # ---------- item ----------
+
+
+# ------------------------------
+# Dialog
+# ------------------------------
 
 class ItemDialog(QDialog):
     def __init__(self, db):
