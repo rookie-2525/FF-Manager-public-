@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QDialog, QFormLayout, QLineEdit, QComboBox, QDialogButtonBox,
     QCheckBox
 )
+from PySide6.QtCore import Qt
 from PySide6.QtSql import QSqlTableModel, QSqlQuery
 
 from ff_manager.db.repositories.items_repo import ItemsRepository
@@ -24,13 +25,16 @@ class ItemsWidget(QWidget):
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)  # ダブルクリックで編集
-
+        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)  # ダブルクリックで編集/
+        self.view.setSortingEnabled(True)   #ソート機能/
+        self.view.sortByColumn(self.model.fieldIndex("item_id"), Qt.AscendingOrder) # 初期表示は item_id 昇順/
         header=self.view.horizontalHeader()
         header.setStretchLastSection(True)
-        header.setSectionResizeMode(self.model.record().indexOf("item_name"), QHeaderView.Stretch)  # 広めに設定
+        header.setSectionResizeMode(self.model.record().indexOf("item_name"), QHeaderView.Stretch)  # 広めに設定/
+        
 
-        # ボタン
+
+        # ボタン/
         self.btn_add = QPushButton("追加")
         self.btn_delete = QPushButton("削除")
         self.btn_save = QPushButton("保存")
@@ -50,7 +54,7 @@ class ItemsWidget(QWidget):
         layout.addWidget(self.view)
         layout.addLayout(btns)
 
-        # シグナル
+        # シグナル/
         self.btn_add.clicked.connect(self.on_add_item)
         self.btn_delete.clicked.connect(self.delete_item)
         self.btn_save.clicked.connect(self.save_changes)
