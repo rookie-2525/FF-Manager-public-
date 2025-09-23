@@ -159,6 +159,6 @@ class ItemDialog(QDialog):
             "freshness": int(self.freshness_combo.currentData() or 0),
             "sales_class": self.sales_class_combo.currentData(),
             "item_type": self.item_type_combo.currentData(),
-            "is_active": int(self.is_active_combo.currentText()),
+            "is_active": 1 if self.is_active_check.isChecked() else 0
         }
 
