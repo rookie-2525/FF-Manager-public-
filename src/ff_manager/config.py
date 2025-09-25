@@ -4,7 +4,7 @@ WINDOW_TITLE="FFM(prot)"
 WINDOW_SIZE=[900,550]
 
 
-DB_PATH = "data\prot.db"
+DB_PATH = r"data\prot.db"
 TABLE = "items"
 
 
