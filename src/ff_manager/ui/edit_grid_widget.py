@@ -66,21 +66,32 @@ class EditGridWidget(QWidget):
 
         # ==== layout ====
 
-        head = QHBoxLayout()
-        head.addWidget(QLabel("日付:"))
-        head.addWidget(self.btn_prev_month)
-        head.addWidget(self.btn_prev_day)
-        head.addWidget(self.date_edit)
-        head.addWidget(self.btn_next_day)
-        head.addWidget(self.btn_next_month)
-        head.addSpacing(12)
-        head.addWidget(QLabel("商品:"))
-        head.addWidget(self.item_combo)
-        head.addStretch()
+        date_form = QHBoxLayout()
+        date_form.addWidget(QLabel("日付:"))
+        date_form.addWidget(self.btn_prev_month)
+        date_form.addWidget(self.btn_prev_day)
+        date_form.addWidget(self.date_edit)
+        date_form.addWidget(self.btn_next_day)
+        date_form.addWidget(self.btn_next_month)
+        date_form.addStretch()
 
-        grids = QVBoxLayout()
-        grids.addWidget(self.item_table)
-        grids.addWidget(self.sum_table)
+
+        summary_grid=QVBoxLayout()
+        summary_grid.addLayout(date_form)
+        summary_grid.addWidget(self.sum_table)
+
+
+        item_form=QHBoxLayout()
+        item_form.addWidget(QLabel("商品:"))
+        item_form.addWidget(self.item_combo)
+        # date_form.addSpacing(12)
+        item_form.addStretch()
+
+
+        item_grid = QVBoxLayout()
+        item_grid.addLayout(item_form)
+        item_grid.addWidget(self.item_table)
+
 
         foot = QHBoxLayout()
         foot.addWidget(self.btn_back)
@@ -89,8 +100,9 @@ class EditGridWidget(QWidget):
         foot.addWidget(self.btn_revert)
 
         root = QVBoxLayout(self)
-        root.addLayout(head)
-        root.addLayout(grids)
+        root.addLayout(summary_grid)
+        root.addLayout(item_grid)
+        root.addStretch()
         root.addLayout(foot)
 
 
