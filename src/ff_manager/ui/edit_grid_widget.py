@@ -10,6 +10,9 @@ from PySide6.QtSql import QSqlQuery
 
 from ff_manager.db.repositories.items_repo import ItemsRepository
 
+from ff_manager.config import TEST_MODE
+
+DEFAULT_DATE=(2025,1,1)
 
 METRICS = ["customer","prepared", "sold", "discarded", "stock"]
 HOURS = list(range(24))
@@ -26,7 +29,11 @@ class EditGridWidget(QWidget):
         # ==== header ====
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)
-        self.date_edit.setDate(QDate.currentDate())
+        if TEST_MODE:
+            self.date_edit.setDate(QDate(*DEFAULT_DATE))
+        else:
+            self.date_edit.setDate(QDate.currentDate())
+
 
         self.item_combo = QComboBox()
         self.item_combo.setEditable(False)
@@ -46,22 +53,8 @@ class EditGridWidget(QWidget):
 
 
         # ==== grid ====
+        self._init_table()
 
-        # --- item table ---
-        self.item_table = QTableWidget(len(METRICS), len(HOURS))
-        self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
-        self.item_table.setVerticalHeaderLabels(["客数","仕込", "販売", "廃棄", "陳列"])
-        self._init_table(self.item_table,True)
-
-        self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        # --- sum table ---
-        self.sum_table = QTableWidget(4, len(HOURS))
-        self.sum_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
-        self.sum_table.setVerticalHeaderLabels(["仕込", "販売", "廃棄", "陳列"])
-        self._init_table(self.sum_table,False)
-
-        self.sum_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
         # ==== layout ====
@@ -78,7 +71,7 @@ class EditGridWidget(QWidget):
 
         summary_grid=QVBoxLayout()
         summary_grid.addLayout(date_form)
-        summary_grid.addWidget(self.sum_table)
+        summary_grid.addWidget(self.summary_table)
 
 
         item_form=QHBoxLayout()
@@ -126,7 +119,7 @@ class EditGridWidget(QWidget):
 
 
         self._clear_tables(self.item_table)
-        self._clear_tables(self.sum_table)
+        self._clear_tables(self.summary_table)
         self.load_current()
 
 
@@ -170,7 +163,44 @@ class EditGridWidget(QWidget):
             if i >= 0:
                 self.item_combo.setCurrentIndex(i)
 
-    def _init_table(self, table: QTableWidget,is_edit:bool):
+    def _init_table(self):
+        # --- summary table ---
+        self.summary_table = QTableWidget(len(METRICS), len(HOURS))
+        self.summary_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
+        self.summary_table.setVerticalHeaderLabels(["客数","仕込", "販売", "廃棄", "陳列"])
+        self._init_summary_table()
+
+        self.summary_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # --- item table ---
+        self.item_table = QTableWidget(4, len(HOURS))
+        self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
+        self.item_table.setVerticalHeaderLabels(["仕込", "販売", "廃棄", "陳列"])
+        self._init_item_table()
+
+        self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+
+
+    def _init_summary_table(self):
+        validator = QIntValidator(0, 1_000_000, self)
+        for r in range(self.summary_table.rowCount()):
+            for c in range(self.summary_table.columnCount()):
+                it = QTableWidgetItem("0")
+                it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                if r == 0:
+                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
+                else:
+                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                self.summary_table.setItem(r, c, it)
+        self.summary_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
+
+        self.summary_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
+
+
+
+
+    def _init_item_table(self):
         """
         テーブルの初期化
 
@@ -181,18 +211,15 @@ class EditGridWidget(QWidget):
 
         """
         validator = QIntValidator(0, 1_000_000, self)
-        for r in range(table.rowCount()):
-            for c in range(table.columnCount()):
+        for r in range(self.item_table.rowCount()):
+            for c in range(self.item_table.columnCount()):
                 it = QTableWidgetItem("0")
                 it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                if is_edit:
-                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-                else:
-                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                table.setItem(r, c, it)
-        table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
+                it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
+                self.item_table.setItem(r, c, it)
+        self.item_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
 
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
+        self.item_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
 
 
     def _sanitize_int_item(self, item: QTableWidgetItem, validator: QIntValidator):
@@ -216,7 +243,7 @@ class EditGridWidget(QWidget):
         name = self._item_name()
         if not d or not name:
             self._clear_tables(self.item_table)
-            self._clear_tables(self.sum_table)
+            self._clear_tables(self.summary_table)
             return
 
         item_id = ItemsRepository(self.db).get_item_id_by_name(name)
@@ -224,8 +251,8 @@ class EditGridWidget(QWidget):
             QMessageBox.information(self, "未登録", "商品を追加してください。")
             return
 
+        self._clear_tables(self.summary_table)
         self._clear_tables(self.item_table)
-        self._clear_tables(self.sum_table)
 
         # ---- 商品メトリクス（行1..4） ----
         q = QSqlQuery(self.db)
@@ -239,7 +266,7 @@ class EditGridWidget(QWidget):
         q.bindValue(":it", item_id)
         q.exec()
 
-        row_of = {"prepared": 1, "sold": 2, "discarded": 3, "stock": 4}
+        row_of = {"prepared": 0, "sold": 1, "discarded": 2, "stock": 3}
 
         while q.next():
             m = q.value(0)
@@ -248,23 +275,6 @@ class EditGridWidget(QWidget):
             if m in row_of and 0 <= h <= 23:
                 self.item_table.item(row_of[m], h).setText(str(v))
 
-        # ---- 客数（行0） ----
-        qc = QSqlQuery(self.db)
-        qc.prepare("""
-            SELECT hour, customer_count
-            FROM fact_hourly_customer
-            WHERE date=:d
-            ORDER BY hour
-        """)
-        qc.bindValue(":d", d)
-        qc.exec()
-
-        while qc.next():
-            h = int(qc.value(0))
-            v = int(qc.value(1))
-            if 0 <= h <= 23:
-                # ★ 統合テーブルなので self.item_table の row=0 に入れる
-                self.item_table.item(0, h).setText(str(v))
 
         self.load_summary(d)
 
@@ -288,8 +298,8 @@ class EditGridWidget(QWidget):
                 VALUES(:d,:h,:it,:m,:v)
                 ON CONFLICT(date, hour, item_id, metric) DO UPDATE SET value= excluded.value
             """)
-            metric_of_row = {1:"prepared", 2:"sold", 3:"discarded", 4:"stock"}
-            for r in (1,2,3,4):
+            metric_of_row = {0:"prepared", 1:"sold", 2:"discarded", 3:"stock"}
+            for r in range(4):
                 mname = metric_of_row[r]
                 for h in HOURS:
                     v = int(self.item_table.item(r, h).text() or 0)
@@ -306,7 +316,7 @@ class EditGridWidget(QWidget):
                 ON CONFLICT(date,hour) DO UPDATE SET customer_count=excluded.customer_count
             """)
             for h in HOURS:
-                c = int(self.item_table.item(0, h).text() or 0)
+                c = int(self.summary_table.item(0, h).text() or 0)
                 qc.bindValue(":d", d); qc.bindValue(":h", h); qc.bindValue(":c", c)
                 if not qc.exec(): raise RuntimeError(qc.lastError().text())
 
@@ -347,7 +357,25 @@ class EditGridWidget(QWidget):
 
 
     def load_summary(self, date_str: str):
-        """全商品の合計をロード"""
+
+        # ---- 客数（行0） ----
+        qc = QSqlQuery(self.db)
+        qc.prepare("""
+            SELECT hour, customer_count
+            FROM fact_hourly_customer
+            WHERE date=:d
+            ORDER BY hour
+        """)
+        qc.bindValue(":d", date_str)
+        qc.exec()
+
+        while qc.next():
+            h = int(qc.value(0))
+            v = int(qc.value(1))
+            if 0 <= h <= 23:
+                self.summary_table.item(0, h).setText(str(v))
+
+
         q = QSqlQuery(self.db)
         q.prepare("""
             SELECT metric, hour, SUM(value) as total_value
@@ -358,9 +386,10 @@ class EditGridWidget(QWidget):
         q.bindValue(":d", date_str)
         q.exec()
 
-        row_of = {"prepared": 0, "sold": 1, "discarded": 2, "stock": 3}
+        row_of = {"prepared": 1, "sold": 2, "discarded": 3, "stock": 4}
         while q.next():
             m, h, v = q.value(0), int(q.value(1)), int(q.value(2))
             if m in row_of and 0 <= h <= 23:
-                self.sum_table.setItem(row_of[m], h, QTableWidgetItem(str(v)))
+                self.summary_table.item(row_of[m],h).setText(str(v))
+                # self.summary_table.setItem(row_of[m], h, QTableWidgetItem(str(v)))
 

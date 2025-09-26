@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtSql import QSqlTableModel
 from PySide6.QtCore import Qt, QModelIndex, QTimer
 
-from ff_manager.config import (WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
+from ff_manager.config import (TEST_MODE,WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
 from ff_manager.db.migrations import ensure_schema_and_migrate
 
 from ff_manager.ui.panels import build_buttons_column,ButtonType

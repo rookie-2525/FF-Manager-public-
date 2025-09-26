@@ -1,14 +1,17 @@
 # config.py
 
-WINDOW_TITLE="FFM(prot)"
-WINDOW_SIZE=[900,550]
+TEST_MODE = True
+
+WINDOW_TITLE = "FFM(prot)"
+WINDOW_SIZE = [900,550]
+
 
 
 DB_PATH = r"data\prot.db"
 TABLE = "items"
 
 
-HEADER_JP={
+HEADER_JP = {
     "log_id":"log ID",
     "date":"日付",
     "hour":"時間",
