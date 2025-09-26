@@ -1,13 +1,15 @@
 # config.py
+import os
 
-TEST_MODE = True
+TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
+
+DB_PATH = r"data\prot.db" if TEST_MODE else r"data\FF_info.db"
+
 
 WINDOW_TITLE = "FFM(prot)"
 WINDOW_SIZE = [900,550]
 
 
-
-DB_PATH = r"data\prot.db"
 TABLE = "items"
 
 
