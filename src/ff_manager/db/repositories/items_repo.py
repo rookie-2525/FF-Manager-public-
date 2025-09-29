@@ -6,9 +6,9 @@ class ItemsRepository:
     def __init__(self,db):
         self.db=db
 
-    def list_item_names(db) -> list[str]:
+    def list_item_names(self) -> list[str]:
         names = []
-        q = QSqlQuery(db)
+        q = QSqlQuery(self.db)
         q.exec("SELECT item_name FROM items ORDER BY item_name")
         while q.next():
             names.append(str(q.value(0)))

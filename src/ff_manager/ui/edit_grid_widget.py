@@ -8,14 +8,18 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QIntValidator
 from PySide6.QtSql import QSqlQuery
 
-from ff_manager.db.repositories.items_repo import ItemsRepository
-
+# from ff_manager.db.repositories.items_repo import ItemsRepository
+# from ff_manager.db.repositories.metrics_repo import MetricsRepository
+from ff_manager.core.constants import (
+    HOURS, ITEM_METRICS,ITEM_LABELS_JA, ITEM_ROW, SUMMARY_ROWS,SUMMARY_LABELS_JA, SUMMARY_ROW
+    )
+from ff_manager.services.metrics_service import MetricsService
 from ff_manager.config import TEST_MODE
 
 DEFAULT_DATE=(2025,1,1)
 
-METRICS = ["customer","prepared", "sold", "discarded", "stock"]
-HOURS = list(range(24))
+# METRICS = ["customer","prepared", "sold", "discarded", "stock"]
+# HOURS = list(range(24))
 
 class EditGridWidget(QWidget):
     saved = Signal(str)   # 保存完了時に 'YYYY-MM-DD' を通知
@@ -25,6 +29,8 @@ class EditGridWidget(QWidget):
 
         # ==== database ====
         self.db = db
+        # self.metrics_repo = MetricsRepository(db)
+        self.service = MetricsService(db)
 
         # ==== header ====
         self.date_edit = QDateEdit()
@@ -122,17 +128,13 @@ class EditGridWidget(QWidget):
         self._clear_tables(self.summary_table)
         self.load_current()
 
-
-
     # ========== public API（親から呼べる） ==========
     def setDate(self, qdate: QDate):
         self.date_edit.setDate(qdate)
-
     def setItemName(self, name: str):
         if name and self.item_combo.findText(name) == -1:
             self.item_combo.addItem(name)
         self.item_combo.setCurrentText(name)
-
     def reloadItems(self):
         self._reload_items()
 
@@ -143,22 +145,12 @@ class EditGridWidget(QWidget):
     def _item_name(self) -> str:
         return (self.item_combo.currentText() or "").strip()
 
-
     def _reload_items(self):
-        """
-        Args:
-            url (str): 取得対象のURL。
-            timeout (int, optional): タイムアウト秒数（デフォルトは30秒）。
-
-        Returns:
-            dict: パース済みのJSONレスポンス。
-        """
         cur = self._item_name()
         self.item_combo.clear()
-        for nm in ItemsRepository.list_item_names(self.db):
+        for nm in self.service.fetch_item_names():
             self.item_combo.addItem(nm)
         if cur:
-            # 現在の選択を維持
             i = self.item_combo.findText(cur)
             if i >= 0:
                 self.item_combo.setCurrentIndex(i)
@@ -167,16 +159,9 @@ class EditGridWidget(QWidget):
         """
         テーブルの初期化
 
-        Args:
-        Returns:
-
         """
         self._init_summary_table()
         self._init_item_table()
-
-        
-
-
 
     def _init_summary_table(self):
         """
@@ -186,9 +171,9 @@ class EditGridWidget(QWidget):
         Returns:
 
         """
-        self.summary_table = QTableWidget(len(METRICS), len(HOURS)+1)
+        self.summary_table = QTableWidget(len(SUMMARY_ROWS), len(HOURS)+1)
         self.summary_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
-        self.summary_table.setVerticalHeaderLabels(["客数","仕込", "販売", "廃棄", "陳列"])
+        self.summary_table.setVerticalHeaderLabels([SUMMARY_LABELS_JA[m] for m in SUMMARY_ROWS])
 
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(self.summary_table.rowCount()):
@@ -208,7 +193,6 @@ class EditGridWidget(QWidget):
         self.summary_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
         # self.summary_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-
     def _init_item_table(self):
         """
         item_tableの初期化
@@ -217,9 +201,9 @@ class EditGridWidget(QWidget):
         Returns:
 
         """
-        self.item_table = QTableWidget(4, len(HOURS)+1)
+        self.item_table = QTableWidget(len(ITEM_METRICS), len(HOURS)+1)
         self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
-        self.item_table.setVerticalHeaderLabels(["仕込", "販売", "廃棄", "陳列"])
+        self.item_table.setVerticalHeaderLabels([ITEM_LABELS_JA[m] for m in ITEM_METRICS])
 
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(self.item_table.rowCount()):
@@ -232,7 +216,6 @@ class EditGridWidget(QWidget):
 
         self.item_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
         # self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
 
     def _sanitize_int_item(self, item: QTableWidgetItem, validator: QIntValidator):
         text = (item.text() or "").strip()
@@ -248,8 +231,38 @@ class EditGridWidget(QWidget):
             for c in range(table.columnCount()):
                 table.item(r, c).setText("0")
 
+    def _fill_table(self, table, data: dict, row_map: dict):
+        """
+        dict のデータを QTableWidget に流し込む共通関数
 
-    # ---------- load ----------
+        Args:
+            table (QTableWidget): 対象テーブル
+            data (dict): {metric: {hour: value}} または {metric: {hour: total}}
+            row_map (dict): metric -> row index の対応
+        """
+        for m, by_hour in data.items():
+            if m not in row_map:
+                continue
+            r = row_map[m]
+            for h, v in by_hour.items():
+                if 0 <= h <= 23:
+                    table.item(r, h).setText(str(v))
+
+        # 合計列
+        for r in range(table.rowCount()):
+            total = sum(int(table.item(r, c).text()) for c in range(24))
+            table.item(r, 24).setText(str(total))
+
+    def _shift_date(self, days: int = 0, months: int = 0):
+        """日付を days 日または months ヶ月ずらす"""
+        d = self.date_edit.date()
+        if days:
+            d = d.addDays(days)
+        if months:
+            d = d.addMonths(months)
+        self.date_edit.setDate(d) 
+
+    # ========== main operations ==========
     def load_current(self):
         d = self._date_iso()
         name = self._item_name()
@@ -258,163 +271,44 @@ class EditGridWidget(QWidget):
             self._clear_tables(self.summary_table)
             return
 
-        item_id = ItemsRepository(self.db).get_item_id_by_name(name)
-        if item_id < 0:
+        item_id = self.service.get_item_id_by_name(name)
+        if item_id is None:
             QMessageBox.information(self, "未登録", "商品を追加してください。")
             return
 
-        self._clear_tables(self.summary_table)
+        # --- Serviceからまとめて取得 ---
+        data = self.service.load(d, item_id)
+
+        # --- 商品テーブル ---
         self._clear_tables(self.item_table)
+        self._fill_table(self.item_table, data["item"], ITEM_ROW)
 
-        # ---- 商品メトリクス（行1..4） ----
-        q = QSqlQuery(self.db)
-        q.prepare("""
-            SELECT metric, hour, value
-            FROM fact_hourly_long
-            WHERE date=:d AND item_id=:it
-            ORDER BY hour
-        """)
-        q.bindValue(":d", d)
-        q.bindValue(":it", item_id)
-        q.exec()
+        # --- サマリテーブル ---
+        self._clear_tables(self.summary_table)
+        customer_data = {"customer": data["customers"]}
+        self._fill_table(self.summary_table, customer_data, SUMMARY_ROW)
+        self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
-        row_of = {"prepared": 0, "sold": 1, "discarded": 2, "stock": 3}
+        # 合計値更新
+        self.update_summary_table(d)
 
-        while q.next():
-            m = q.value(0)
-            h = int(q.value(1))
-            v = int(q.value(2))
-            if m in row_of and 0 <= h <= 23:
-                self.item_table.item(row_of[m], h).setText(str(v))
-
-
-        for r in range(4):
-            total = sum(int(self.item_table.item(r, c).text()) for c in range(24))
-            self.item_table.item(r, 24).setText(str(total))
-
-        self.load_summary(d)
-
-    # ---------- save (UPSERT only; サマリは親で) ----------
     def save_current(self):
         d = self._date_iso()
         name = self._item_name()
-        # if not d or not name:
-        #     QMessageBox.information(self, "入力不足", "日付と商品名を入力してください。"); return
+        item_id = self.service.get_item_id_by_name(name)
+        if item_id is None:
+            QMessageBox.warning(self, "未登録", "商品を追加してください。")
+            return
 
-        item_id = ItemsRepository(self.db).get_item_id_by_name(name)
-        if item_id < 0:
-            QMessageBox.warning(self, "未登録", "商品を追加してください。"); return
-
-        self.db.transaction()
         try:
-            # 1) 商品メトリクス（行1..4）
-            q = QSqlQuery(self.db)
-            q.prepare("""
-                INSERT INTO fact_hourly_long(date,hour,item_id,metric,value)
-                VALUES(:d,:h,:it,:m,:v)
-                ON CONFLICT(date, hour, item_id, metric) DO UPDATE SET value= excluded.value
-            """)
-            metric_of_row = {0:"prepared", 1:"sold", 2:"discarded", 3:"stock"}
-            for r in range(4):
-                mname = metric_of_row[r]
-                for h in HOURS:
-                    v = int(self.item_table.item(r, h).text() or 0)
-                    q.bindValue(":d", d); q.bindValue(":h", h)
-                    q.bindValue(":it", item_id); q.bindValue(":m", mname)
-                    q.bindValue(":v", v)
-                    if not q.exec(): raise RuntimeError(q.lastError().text())
-
-            # 2) 客数（行0）
-            qc = QSqlQuery(self.db)
-            qc.prepare("""
-                INSERT INTO fact_hourly_customer(date,hour,customer_count)
-                VALUES(:d,:h,:c)
-                ON CONFLICT(date,hour) DO UPDATE SET customer_count=excluded.customer_count
-            """)
-            for h in HOURS:
-                c = int(self.summary_table.item(0, h).text() or 0)
-                qc.bindValue(":d", d); qc.bindValue(":h", h); qc.bindValue(":c", c)
-                if not qc.exec(): raise RuntimeError(qc.lastError().text())
-
-            # 3) 日次客数サマリを更新
-            qd = QSqlQuery(self.db)
-            qd.prepare("""
-                INSERT INTO fact_daily_customer(date, customer_count)
-                VALUES(:d, (
-                    SELECT SUM(customer_count) FROM fact_hourly_customer WHERE date=:d
-                ))
-                ON CONFLICT(date) DO UPDATE SET customer_count=excluded.customer_count
-            """)
-            qd.bindValue(":d", d)
-            if not qd.exec():
-                raise RuntimeError(qd.lastError().text())
-
-
-
-            for r in range(4):
-                total = sum(int(self.item_table.item(r, c).text()) for c in range(24))
-                self.item_table.item(r, 24).setText(str(total))
-
-            self.load_summary(d)
-
-            self.db.commit()
+            self.service.save(d, item_id, self.item_table, self.summary_table)
             self.saved.emit(d)
             QMessageBox.information(self, "保存完了", f"{d} のデータを保存しました。")
-
+            self.load_current()
         except Exception as e:
-            self.db.rollback()
             QMessageBox.warning(self, "保存失敗", str(e))
 
-
-    # ---------- day ----------
-    def _shift_date(self, days: int = 0, months: int = 0):
-        """日付を days 日または months ヶ月ずらす"""
-        d = self.date_edit.date()
-        if days:
-            d = d.addDays(days)
-        if months:
-            d = d.addMonths(months)
-        self.date_edit.setDate(d)  
-
-
-    def load_summary(self, date_str: str):
-
-        # ---- 客数（行0） ----
-        qc = QSqlQuery(self.db)
-        qc.prepare("""
-            SELECT hour, customer_count
-            FROM fact_hourly_customer
-            WHERE date=:d
-            ORDER BY hour
-        """)
-        qc.bindValue(":d", date_str)
-        qc.exec()
-
-        while qc.next():
-            h = int(qc.value(0))
-            v = int(qc.value(1))
-            if 0 <= h <= 23:
-                self.summary_table.item(0, h).setText(str(v))
-
-
-        q = QSqlQuery(self.db)
-        q.prepare("""
-            SELECT metric, hour, SUM(value) as total_value
-            FROM fact_hourly_long
-            WHERE date=:d
-            GROUP BY metric, hour
-        """)
-        q.bindValue(":d", date_str)
-        q.exec()
-
-        row_of = {"prepared": 1, "sold": 2, "discarded": 3, "stock": 4}
-        while q.next():
-            m, h, v = q.value(0), int(q.value(1)), int(q.value(2))
-            if m in row_of and 0 <= h <= 23:
-                self.summary_table.item(row_of[m],h).setText(str(v))
-                # self.summary_table.setItem(row_of[m], h, QTableWidgetItem(str(v)))
-
-        for r in range(5):
-            total = sum(int(self.summary_table.item(r, c).text()) for c in range(24))
-            self.summary_table.item(r, 24).setText(str(total))
+    def update_summary_table(self, date_str: str):
+        data = self.service.fetch_summary(date_str)
+        self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
