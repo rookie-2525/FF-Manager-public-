@@ -6,7 +6,7 @@ TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
 DB_PATH = r"data\prot.db" if TEST_MODE else r"data\FF_info.db"
 
 
-WINDOW_TITLE = "FFM(prot)"
+WINDOW_TITLE = "FFM (prot)" if TEST_MODE else "FF Manager"
 WINDOW_SIZE = [900,550]
 
 

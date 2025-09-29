@@ -164,52 +164,63 @@ class EditGridWidget(QWidget):
                 self.item_combo.setCurrentIndex(i)
 
     def _init_table(self):
-        # --- summary table ---
-        self.summary_table = QTableWidget(len(METRICS), len(HOURS))
-        self.summary_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
-        self.summary_table.setVerticalHeaderLabels(["客数","仕込", "販売", "廃棄", "陳列"])
+        """
+        テーブルの初期化
+
+        Args:
+        Returns:
+
+        """
         self._init_summary_table()
-
-        self.summary_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        # --- item table ---
-        self.item_table = QTableWidget(4, len(HOURS))
-        self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS])
-        self.item_table.setVerticalHeaderLabels(["仕込", "販売", "廃棄", "陳列"])
         self._init_item_table()
 
-        self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
 
 
 
     def _init_summary_table(self):
+        """
+        summary_tableの初期化
+
+        Args:
+        Returns:
+
+        """
+        self.summary_table = QTableWidget(len(METRICS), len(HOURS)+1)
+        self.summary_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
+        self.summary_table.setVerticalHeaderLabels(["客数","仕込", "販売", "廃棄", "陳列"])
+
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(self.summary_table.rowCount()):
             for c in range(self.summary_table.columnCount()):
                 it = QTableWidgetItem("0")
                 it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 if r == 0:
-                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
+                    if c==24:
+                        it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    else:
+                        it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
                 else:
                     it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
                 self.summary_table.setItem(r, c, it)
         self.summary_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
 
         self.summary_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
-
-
+        # self.summary_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
     def _init_item_table(self):
         """
-        テーブルの初期化
+        item_tableの初期化
 
         Args:
-            table (QTableWidget): 取得対象のQTableWidget
-            is_edit(bool): 編集許可の有無
         Returns:
 
         """
+        self.item_table = QTableWidget(4, len(HOURS)+1)
+        self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
+        self.item_table.setVerticalHeaderLabels(["仕込", "販売", "廃棄", "陳列"])
+
         validator = QIntValidator(0, 1_000_000, self)
         for r in range(self.item_table.rowCount()):
             for c in range(self.item_table.columnCount()):
@@ -220,6 +231,7 @@ class EditGridWidget(QWidget):
         self.item_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
 
         self.item_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
+        # self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
     def _sanitize_int_item(self, item: QTableWidgetItem, validator: QIntValidator):
@@ -275,6 +287,10 @@ class EditGridWidget(QWidget):
             if m in row_of and 0 <= h <= 23:
                 self.item_table.item(row_of[m], h).setText(str(v))
 
+
+        for r in range(4):
+            total = sum(int(self.item_table.item(r, c).text()) for c in range(24))
+            self.item_table.item(r, 24).setText(str(total))
 
         self.load_summary(d)
 
@@ -333,12 +349,17 @@ class EditGridWidget(QWidget):
             if not qd.exec():
                 raise RuntimeError(qd.lastError().text())
 
-            self.db.commit()
-            self.saved.emit(d)
-            QMessageBox.information(self, "保存完了", f"{d} のデータを保存しました。")
+
+
+            for r in range(4):
+                total = sum(int(self.item_table.item(r, c).text()) for c in range(24))
+                self.item_table.item(r, 24).setText(str(total))
 
             self.load_summary(d)
 
+            self.db.commit()
+            self.saved.emit(d)
+            QMessageBox.information(self, "保存完了", f"{d} のデータを保存しました。")
 
         except Exception as e:
             self.db.rollback()
@@ -392,4 +413,8 @@ class EditGridWidget(QWidget):
             if m in row_of and 0 <= h <= 23:
                 self.summary_table.item(row_of[m],h).setText(str(v))
                 # self.summary_table.setItem(row_of[m], h, QTableWidgetItem(str(v)))
+
+        for r in range(5):
+            total = sum(int(self.summary_table.item(r, c).text()) for c in range(24))
+            self.summary_table.item(r, 24).setText(str(total))
 
