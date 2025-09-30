@@ -1,14 +1,28 @@
 # config.py
 import os
+from matplotlib import rcParams, font_manager
 
 TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
+
+
+# --- 環境ごとのフォント設定 ---
+if os.name == "nt":  # Windows
+    FONT_PATH = "C:/Windows/Fonts/meiryo.ttc"
+elif os.name == "posix":  # macOS/Linux
+    FONT_PATH = "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc"  # Macの例
+else:
+    FONT_PATH = None
+
+if FONT_PATH and os.path.exists(FONT_PATH):
+    rcParams["font.family"] = font_manager.FontProperties(fname=FONT_PATH).get_name()
+
+
 
 DB_PATH = r"data\prot.db" if TEST_MODE else r"data\FF_info.db"
 
 
 WINDOW_TITLE = "FFM (prot)" if TEST_MODE else "FF Manager"
 WINDOW_SIZE = [900,550]
-
 
 TABLE = "items"
 
