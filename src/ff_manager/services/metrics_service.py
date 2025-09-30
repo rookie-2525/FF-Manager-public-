@@ -1,10 +1,13 @@
 # services/metrics_service.py
 from typing import Dict
 from PySide6.QtWidgets import QTableWidget
+
 from ff_manager.db.repositories.metrics_repo import MetricsRepository
 from ff_manager.db.repositories.items_repo import ItemsRepository
-from ff_manager.core.constants import HOURS, ITEM_ROW, SUMMARY_ROW
 
+from ff_manager.core.constants import (
+    HOURS,ITEM_METRICS,ITEM_LABELS_JA,ITEM_ROW,SUMMARY_ROWS,SUMMARY_ROW,SUMMARY_LABELS_JA
+    )
 
 class MetricsService:
     def __init__(self, db):
@@ -52,13 +55,17 @@ class MetricsService:
         return {"customers": cust_data, "summary": summary_data}
 
     def load_item_metrics(self, date_iso: str, item_id: int) -> Dict[str, Dict[int, int]]:
-        return self.repo.fetch_item_metrics(date_iso, item_id)
+        out = self.repo.fetch_item_metrics(date_iso, item_id)
+        # DBに値が無いメトリクスも必ず key を持たせる
+        return {m: out.get(m, {}) for m in ITEM_METRICS}
 
     def load_hourly_customers(self, date_iso: str) -> Dict[int, int]:
-        return self.repo.fetch_hourly_customers(date_iso)
+        out= self.repo.fetch_hourly_customers(date_iso)
+        return {h:out.get(h,0) for h in HOURS}
 
     def load_summary_metrics(self, date_iso: str) -> Dict[str, Dict[int, int]]:
-        return self.repo.fetch_summary_metrics(date_iso)
+        out = self.repo.fetch_summary_metrics(date_iso)
+        return {m: out.get(m, {}) for m in SUMMARY_ROWS}
 
     # ---------- 保存 ----------
     def save(self, date_iso: str, item_id: int, item_table: QTableWidget, summary_table: QTableWidget):
@@ -113,5 +120,4 @@ class MetricsService:
     def fetch_item_names(self) -> list[str]:
         """商品名一覧を取得"""
         return self.repo_items.list_item_names()
-    
     

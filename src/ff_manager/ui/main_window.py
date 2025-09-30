@@ -5,8 +5,6 @@ from PySide6.QtWidgets import (
     QPushButton, QTableView, QMessageBox, QAbstractItemView, QSplitter, QHeaderView,
     QDialog,
 )
-from PySide6.QtSql import QSqlTableModel
-from PySide6.QtCore import Qt, QModelIndex, QTimer
 
 from ff_manager.config import (TEST_MODE,WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
 from ff_manager.core.constants import TAB_INDEX
@@ -44,14 +42,22 @@ class MainWindow(QMainWindow):
         self.items_repo=ItemsRepository(db)
 
         # --- service ---
-        self.chart_service = ChartService(db)
         self.metrics_service=MetricsService(db)
+        self.chart_service = ChartService(db)
 
         self.stack = QStackedWidget()
-        self.stack.addWidget(MenuWidget(self.stack))                # menu
-        self.stack.addWidget(ItemsWidget(self.db,self.stack))       # items
-        self.stack.addWidget(EditGridWidget(self.metrics_service,self.items_repo,self.stack))    # edit
-        self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))   # chart
+        # menu
+        self.stack.addWidget(MenuWidget(self.stack))                
+        # items
+        self.stack.addWidget(ItemsWidget(self.db,self.stack))       
+        # edit
+        self.stack.addWidget(EditGridWidget(
+             self.metrics_service,
+             self.chart_service,
+             self.items_repo,
+             self.stack))    # edit
+        # chart
+        self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))
         self.setCentralWidget(self.stack)
 
         # self.grid = EditGridWidget(self.db,self.stack)

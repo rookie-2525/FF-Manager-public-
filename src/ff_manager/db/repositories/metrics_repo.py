@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Dict
 from PySide6.QtSql import QSqlQuery
 
+from ff_manager.core.constants import (
+    HOURS,ITEM_METRICS,ITEM_LABELS_JA,ITEM_ROW,SUMMARY_ROWS,SUMMARY_ROW,SUMMARY_LABELS_JA
+    )
+
 class MetricsRepository:
     def __init__(self, db):
         self.db = db
@@ -28,10 +32,17 @@ class MetricsRepository:
         q.bindValue(":d", date_iso)
         q.bindValue(":it", item_id)
         q.exec()
-        out: Dict[str, Dict[int, int]] = {}
+        # 返却フォーマットを保証
+        out: Dict[str, Dict[int, int]] = {m:{} for m in ITEM_METRICS}
         while q.next():
-            m = str(q.value(0)); h = int(q.value(1)); v = int(q.value(2))
-            out.setdefault(m, {})[h] = v
+            m = str(q.value(0))
+            h = int(q.value(1))
+            v = int(q.value(2))
+
+            if m not in ITEM_METRICS:
+                raise ValueError(f"Unknown metric '{m}' in DB for item {item_id}")
+
+            out[m][h]=v
         return out
 
     def upsert_item_metrics(self, date_iso: str, item_id: int, data: Dict[str, Dict[int, int]]) -> None:

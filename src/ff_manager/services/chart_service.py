@@ -12,6 +12,8 @@ class ChartService:
         item_id: int | None = None
     ) -> dict[str, dict[int, int]]:
         """
+
+
         Args:
             date_range: (start_date, end_date) "YYYY-MM-DD" 形式
             metric: "prepared", "sold", "discarded", "stock", "customer"
@@ -32,3 +34,26 @@ class ChartService:
             result[d] = metrics.get(metric, {})
 
         return result
+    
+    def get_item_vs_customer(self, date: str, item_id: int) -> dict:
+        """
+        商品ごとの販売数と客数を取得して返す
+        Returns:
+            {
+                "prepared": [...],
+                "sold": [...],
+                "discarded": [...],
+                "stock": [...],
+                "customer": [...]
+            }
+        """
+        item_data = self.metrics_service.load_item_metrics(date, item_id)
+        customer_data = self.metrics_service.load_hourly_customers(date)
+
+        return {
+            "prepared": [item_data["prepared"].get(h, 0) for h in range(24)],
+            "sold": [item_data["sold"].get(h, 0) for h in range(24)],
+            "discarded": [item_data["discarded"].get(h, 0) for h in range(24)],
+            "stock": [item_data["stock"].get(h, 0) for h in range(24)],
+            "customer": [customer_data.get(h, 0) for h in range(24)]
+        }
