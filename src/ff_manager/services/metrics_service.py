@@ -113,3 +113,5 @@ class MetricsService:
     def fetch_item_names(self) -> list[str]:
         """商品名一覧を取得"""
         return self.repo_items.list_item_names()
+    
+    

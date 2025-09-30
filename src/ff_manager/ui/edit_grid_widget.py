@@ -8,29 +8,34 @@ from PySide6.QtCore import Qt, QDate, Signal
 from PySide6.QtGui import QIntValidator
 from PySide6.QtSql import QSqlQuery
 
-# from ff_manager.db.repositories.items_repo import ItemsRepository
-# from ff_manager.db.repositories.metrics_repo import MetricsRepository
 from ff_manager.core.constants import (
     HOURS, ITEM_METRICS,ITEM_LABELS_JA, ITEM_ROW, SUMMARY_ROWS,SUMMARY_LABELS_JA, SUMMARY_ROW
+    ,TAB_INDEX
     )
+from ff_manager.ui.charts_widget import ChartsWidget
+
+from ff_manager.db.repositories.items_repo import ItemsRepository
+
 from ff_manager.services.metrics_service import MetricsService
+from ff_manager.services.chart_service import ChartService
+
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from ff_manager.config import TEST_MODE
 
 DEFAULT_DATE=(2025,1,1)
 
-# METRICS = ["customer","prepared", "sold", "discarded", "stock"]
-# HOURS = list(range(24))
 
 class EditGridWidget(QWidget):
     saved = Signal(str)   # 保存完了時に 'YYYY-MM-DD' を通知
 
-    def __init__(self, db,stacked_widget, parent=None):
+    def __init__(self,metrics_service:MetricsService,items_repo:ItemsRepository,stacked_widget, parent=None):
         super().__init__(parent)
 
-        # ==== database ====
-        self.db = db
-        # self.metrics_repo = MetricsRepository(db)
-        self.service = MetricsService(db)
+        # ==== service ====
+        self.items_repo=items_repo
+        self.metrics_service = metrics_service
+        # self.chart_service=ChartService(db)
 
         # ==== header ====
         self.date_edit = QDateEdit()
@@ -61,6 +66,10 @@ class EditGridWidget(QWidget):
         # ==== grid ====
         self._init_table()
 
+        # ==== 簡易グラフ ====
+        self.figure=Figure(figsize=(3,2))
+        self.canvas = FigureCanvas(self.figure)
+        self.btn_chart = QPushButton("グラフ分析")
 
 
         # ==== layout ====
@@ -78,6 +87,8 @@ class EditGridWidget(QWidget):
         summary_grid=QVBoxLayout()
         summary_grid.addLayout(date_form)
         summary_grid.addWidget(self.summary_table)
+        summary_grid.addWidget(self.canvas)
+        summary_grid.addWidget(self.btn_chart)
 
 
         item_form=QHBoxLayout()
@@ -123,10 +134,12 @@ class EditGridWidget(QWidget):
         self.date_edit.dateChanged.connect(self.load_current)
         self.item_combo.currentTextChanged.connect(self.load_current)
 
+        self.btn_chart.clicked.connect(lambda: stacked_widget.setCurrentIndex(TAB_INDEX["CHARTS"]))
 
         self._clear_tables(self.item_table)
         self._clear_tables(self.summary_table)
         self.load_current()
+
 
     # ========== public API（親から呼べる） ==========
     def setDate(self, qdate: QDate):
@@ -148,7 +161,7 @@ class EditGridWidget(QWidget):
     def _reload_items(self):
         cur = self._item_name()
         self.item_combo.clear()
-        for nm in self.service.fetch_item_names():
+        for nm in self.metrics_service.fetch_item_names():
             self.item_combo.addItem(nm)
         if cur:
             i = self.item_combo.findText(cur)
@@ -271,13 +284,13 @@ class EditGridWidget(QWidget):
             self._clear_tables(self.summary_table)
             return
 
-        item_id = self.service.get_item_id_by_name(name)
+        item_id = self.metrics_service.get_item_id_by_name(name)
         if item_id is None:
             QMessageBox.information(self, "未登録", "商品を追加してください。")
             return
 
         # --- Serviceからまとめて取得 ---
-        data = self.service.load(d, item_id)
+        data = self.metrics_service.load(d, item_id)
 
         # --- 商品テーブル ---
         self._clear_tables(self.item_table)
@@ -295,13 +308,13 @@ class EditGridWidget(QWidget):
     def save_current(self):
         d = self._date_iso()
         name = self._item_name()
-        item_id = self.service.get_item_id_by_name(name)
+        item_id = self.metrics_service.get_item_id_by_name(name)
         if item_id is None:
             QMessageBox.warning(self, "未登録", "商品を追加してください。")
             return
 
         try:
-            self.service.save(d, item_id, self.item_table, self.summary_table)
+            self.metrics_service.save(d, item_id, self.item_table, self.summary_table)
             self.saved.emit(d)
             QMessageBox.information(self, "保存完了", f"{d} のデータを保存しました。")
             self.load_current()
@@ -309,6 +322,6 @@ class EditGridWidget(QWidget):
             QMessageBox.warning(self, "保存失敗", str(e))
 
     def update_summary_table(self, date_str: str):
-        data = self.service.fetch_summary(date_str)
+        data = self.metrics_service.fetch_summary(date_str)
         self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
