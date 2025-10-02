@@ -7,7 +7,7 @@ from PySide6.QtSql import QSqlTableModel
 from PySide6.QtCore import Qt
 
 from ff_manager.ui.items_widget import ItemsWidget
-from ff_manager.ui.edit_grid_widget import EditGridWidget
+from ff_manager.ui.edit_grid.edit_grid_widget import EditGridWidget
 
 
 class MenuWidget(QWidget):

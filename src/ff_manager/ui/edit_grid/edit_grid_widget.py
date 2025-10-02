@@ -22,6 +22,15 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from ff_manager.config import TEST_MODE
 
+from ff_manager.ui.edit_grid.tables import (
+    init_summary_table,
+    init_item_table,
+    clear_table,
+    fill_table,
+)
+
+from ff_manager.ui.edit_grid.chart_area import ChartArea
+
 DEFAULT_DATE=(2025,1,1)
 
 
@@ -43,27 +52,44 @@ class EditGridWidget(QWidget):
         self.metrics_service = metrics_service
         self.chart_service=chart_service
 
-        # ==== header ====
+        # # ==== header ====
+        # self._init_header()
+
+
+        # # ==== grid ====
+        # self.summary_table = init_summary_table(SUMMARY_ROWS, SUMMARY_LABELS_JA)
+        # self.item_table = init_item_table(ITEM_METRICS, ITEM_LABELS_JA)
+        
+        # # ==== グラフエリア ====
+        # self.chart_area = ChartArea(self)
+
+        # # ==== layout ====
+        # self._init_layout(stacked_widget)
+
+
+        # #=== signal ===
+        # self._init_signal(stacked_widget)
+
+        # clear_table(self.summary_table)
+        # clear_table(self.item_table)
+        # self.load_item_and_summary()
+
+        # 子コンポーネント
+        self.summary_table = init_summary_table(SUMMARY_ROWS, SUMMARY_LABELS_JA)
+        self.item_table = init_item_table(ITEM_METRICS, ITEM_LABELS_JA)
+        self.chart_area = ChartArea(self)
+
+        # UI 初期化
         self._init_header()
-
-
-        # ==== grid ====
-        self._init_table()
-
-        # ==== グラフ ====
-        self._init_chart_area()
-
-        # ==== layout ====
+        self._init_footer()
         self._init_layout(stacked_widget)
 
+        # signal
+        self._connect_signals(stacked_widget)
 
-        #=== signal ===
-        self._init_signal(stacked_widget)
-
-        self._clear_table(self.item_table)
-        self._clear_table(self.summary_table)
+        clear_table(self.summary_table)
+        clear_table(self.item_table)
         self.load_item_and_summary()
-
 
     # ========== public API ==========
 
@@ -120,130 +146,47 @@ class EditGridWidget(QWidget):
         else:
             self.date_edit.setDate(QDate.currentDate())
 
-        self.item_combo = QComboBox()
-        self.item_combo.setEditable(False)
-        self._reload_items()
-
         self.btn_prev_day=QPushButton("<")
         self.btn_next_day=QPushButton(">")
         self.btn_prev_month=QPushButton("<<")
         self.btn_next_month=QPushButton(">>")
-        self.btn_save = QPushButton("保存")
-        self.btn_revert = QPushButton("やり直し")
-        self.btn_back = QPushButton("戻る")
+
+        self.item_combo = QComboBox()
+        self.item_combo.setEditable(False)
+        self._reload_items()
+
 
 
         for btn in (self.btn_prev_month, self.btn_prev_day, self.btn_next_day, self.btn_next_month):
             btn.setFixedSize(28, 24)
 
-
-    # ---------------- table ----------------
-    def _init_table(self):
-        """
-        テーブルの初期化
-
-        """
-        self._init_summary_table()
-        self._init_item_table()
-
-    def _init_summary_table(self):
-        """
-        summary_tableの初期化
-
-        Args:
-        Returns:
-
-        """
-        self.summary_table = QTableWidget(len(SUMMARY_ROWS), len(HOURS)+1)
-        self.summary_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
-        self.summary_table.setVerticalHeaderLabels([SUMMARY_LABELS_JA[m] for m in SUMMARY_ROWS])
-
-        validator = QIntValidator(0, 1_000_000, self)
-        for r in range(self.summary_table.rowCount()):
-            for c in range(self.summary_table.columnCount()):
-                it = QTableWidgetItem("0")
-                it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                if r == 0:
-                    if c==24:
-                        it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                    else:
-                        it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-                else:
-                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
-                self.summary_table.setItem(r, c, it)
-        self.summary_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
-
-        self.summary_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
-        # self.summary_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-    def _init_item_table(self):
-        """
-        item_tableの初期化
-
-        Args:
-        Returns:
-
-        """
-        self.item_table = QTableWidget(len(ITEM_METRICS), len(HOURS)+1)
-        self.item_table.setHorizontalHeaderLabels([str(h) for h in HOURS]+["合計"])
-        self.item_table.setVerticalHeaderLabels([ITEM_LABELS_JA[m] for m in ITEM_METRICS])
-
-        validator = QIntValidator(0, 1_000_000, self)
-        for r in range(self.item_table.rowCount()):
-            for c in range(self.item_table.columnCount()):
-                it = QTableWidgetItem("0")
-                it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-                self.item_table.setItem(r, c, it)
-        self.item_table.itemChanged.connect(lambda item: self._sanitize_int_item(item, validator))
-
-        self.item_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)     # 余白を均等に配分
-        # self.item_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-    def _clear_table(self,table:QTableWidget):
-        for r in range(table.rowCount()):
-            for c in range(table.columnCount()):
-                table.item(r, c).setText("0")
-
-    def _fill_table(self, table, data: dict, row_map: dict):
-        """
-        dict のデータを QTableWidget に流し込む共通関数
-
-        Args:
-            table (QTableWidget): 対象テーブル
-            data (dict): {metric: {hour: value}} または {metric: {hour: total}}
-            row_map (dict): metric -> row index の対応
-        """
-        for m, by_hour in data.items():
-            if m not in row_map:
-                continue
-            r = row_map[m]
-            for h, v in by_hour.items():
-                if 0 <= h <= 23:
-                    table.item(r, h).setText(str(v))
-
-        # 合計列
-        for r in range(table.rowCount()):
-            total = sum(int(table.item(r, c).text()) for c in range(24))
-            table.item(r, 24).setText(str(total))
-
-
-    # ---------------- Chart ----------------
-    def _init_chart_area(self):
-        """グラフ描画用ウィジェットの初期化"""
-        self.figure = Figure(figsize=(4, 2))
-        self.item_canvas = FigureCanvas(self.figure)
-        self.ax = self.item_canvas.figure.subplots()
-        self.ax2 = self.ax.twinx()  # 右軸を最初に作って保持
-        self.item_canvas.setVisible(False)  # 初期は非表示
-
+        # グラフボタン
         self.btn_chart = QPushButton("グラフ")
-        self.btn_chart.setCheckable(True)  # 折り畳み用トグル
+        self.btn_chart.setCheckable(True)
         self.btn_chart.toggled.connect(self._toggle_chart)
 
 
+    def _init_footer(self):
+        self.btn_save = QPushButton("保存")
+        self.btn_revert = QPushButton("やり直し")
+        self.btn_back = QPushButton("戻る")
+
+    # ---------------- Chart ----------------
+    # def _init_chart_area(self):
+    #     """グラフ描画用ウィジェットの初期化"""
+    #     self.figure = Figure(figsize=(4, 2))
+    #     self.item_canvas = FigureCanvas(self.figure)
+    #     self.ax = self.item_canvas.figure.subplots()
+    #     self.ax2 = self.ax.twinx()  # 右軸を最初に作って保持
+    #     self.item_canvas.setVisible(False)  # 初期は非表示
+
+    #     self.btn_chart = QPushButton("グラフ")
+    #     self.btn_chart.setCheckable(True)  # 折り畳み用トグル
+    #     self.btn_chart.toggled.connect(self._toggle_chart)
+
+
     def _toggle_chart(self, checked: bool):
-        self.item_canvas.setVisible(checked)
+        self.chart_area.widget().setVisible(checked)
         if checked:
             self._refresh_chart()
 
@@ -255,28 +198,28 @@ class EditGridWidget(QWidget):
             return
 
         data = self.chart_service.get_item_vs_customer(d, item_id)
-        self._update_chart(data)
+        self.chart_area.refresh(data)
  
-    def _update_chart(self, data: dict):
-        self.ax.clear()
-        self.ax2.clear()
-        self.ax.set_xticks(HOURS)
+    # def _update_chart(self, data: dict):
+    #     self.ax.clear()
+    #     self.ax2.clear()
+    #     self.ax.set_xticks(HOURS)
 
-        # 左軸: 商品メトリクス
-        for m,la in ITEM_LABELS_JA.items():
-            self.ax.plot(HOURS, data[m], label=la)
-        self.ax.set_ylim(0,20)
+    #     # 左軸: 商品メトリクス
+    #     for m,la in ITEM_LABELS_JA.items():
+    #         self.ax.plot(HOURS, data[m], label=la)
+    #     self.ax.set_ylim(0,20)
 
-        # 右軸: 客数
-        self.ax2.plot(HOURS, data["customer"], color="black", linestyle="--", label="客数")
-        self.ax2.set_ylim(0,200)
+    #     # 右軸: 客数
+    #     self.ax2.plot(HOURS, data["customer"], color="black", linestyle="--", label="客数")
+    #     self.ax2.set_ylim(0,200)
 
-        self.ax.set_xlabel("Hour")
-        self.ax.set_ylabel("Count")
-        self.ax.legend(loc="upper left")
-        self.ax2.legend(loc="upper right")
+    #     self.ax.set_xlabel("Hour")
+    #     self.ax.set_ylabel("Count")
+    #     self.ax.legend(loc="upper left")
+    #     self.ax2.legend(loc="upper right")
 
-        self.item_canvas.draw()
+    #     self.item_canvas.draw()
 
     # ---------------- layout ----------------
     def _init_layout(self,stack:QStackedWidget):
@@ -290,31 +233,27 @@ class EditGridWidget(QWidget):
         date_form.addWidget(self.btn_next_month)
         date_form.addStretch()
 
-
         summary_grid=QVBoxLayout()
         summary_grid.addLayout(date_form)
         summary_grid.addWidget(self.summary_table)
 
-
         item_form=QHBoxLayout()
         item_form.addWidget(QLabel("商品:"))
         item_form.addWidget(self.item_combo)
-        # date_form.addSpacing(12)
         item_form.addStretch()
-
 
         item_grid = QVBoxLayout()
         item_grid.addLayout(item_form)
         item_grid.addWidget(self.item_table)
         item_grid.addWidget(self.btn_chart)
-        item_grid.addWidget(self.item_canvas)
-
+        item_grid.addWidget(self.chart_area.widget())
 
         foot = QHBoxLayout()
         foot.addWidget(self.btn_back)
         foot.addStretch()
         foot.addWidget(self.btn_save)
         foot.addWidget(self.btn_revert)
+
 
         root = QVBoxLayout(self)
         root.addLayout(summary_grid)
@@ -323,7 +262,7 @@ class EditGridWidget(QWidget):
         root.addLayout(foot)
 
     # ---------------- signal ----------------
-    def _init_signal(self,stack:QStackedWidget):
+    def _connect_signals(self,stack:QStackedWidget):
         self.btn_save.clicked.connect(self.save_item_and_summary)
         self.btn_revert.clicked.connect(self.load_item_and_summary)
         self.btn_back.clicked.connect(lambda: stack.setCurrentIndex(0))
@@ -349,8 +288,8 @@ class EditGridWidget(QWidget):
         d = self._date_iso()
         name = self._item_name()
         if not d or not name:
-            self._clear_table(self.item_table)
-            self._clear_table(self.summary_table)
+            self.clear_table(self.item_table)
+            self.clear_table(self.summary_table)
             return
 
         item_id = self.metrics_service.get_item_id_by_name(name)
@@ -362,14 +301,14 @@ class EditGridWidget(QWidget):
         data = self.metrics_service.load(d, item_id)
 
         # --- 商品テーブル ---
-        self._clear_table(self.item_table)
-        self._fill_table(self.item_table, data["item"], ITEM_ROW)
+        clear_table(self.item_table)
+        fill_table(self.item_table, data["item"], ITEM_ROW)
 
         # --- サマリテーブル ---
-        self._clear_table(self.summary_table)
+        clear_table(self.summary_table)
         customer_data = {"customer": data["customers"]}
-        self._fill_table(self.summary_table, customer_data, SUMMARY_ROW)
-        self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
+        fill_table(self.summary_table, customer_data, SUMMARY_ROW)
+        fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
         # 合計値更新
         self.update_summary_table(d)
@@ -392,14 +331,14 @@ class EditGridWidget(QWidget):
 
     def update_summary_table(self, date_str: str):
         data = self.metrics_service.fetch_summary(date_str)
-        self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
+        fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
     def reload_all(self):
         d = self._date_iso()
         name = self._item_name()
         if not d or not name:
-            self._clear_table(self.item_table)
-            self._clear_table(self.summary_table)
+            clear_table(self.item_table)
+            clear_table(self.summary_table)
             self._update_chart({"prepared":[],"sold":[],"discarded":[],"stock":[],"customer":[]})
             return
 
@@ -410,14 +349,15 @@ class EditGridWidget(QWidget):
 
         # --- テーブル更新 ---
         data = self.metrics_service.load(d, item_id)
-        self._clear_table(self.item_table)
-        self._fill_table(self.item_table, data["item"], ITEM_ROW)
+        clear_table(self.item_table)
+        fill_table(self.item_table, data["item"], ITEM_ROW)
 
-        self._clear_table(self.summary_table)
+        clear_table(self.summary_table)
         customer_data = {"customer": data["customers"]}
-        self._fill_table(self.summary_table, customer_data, SUMMARY_ROW)
-        self._fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
+        fill_table(self.summary_table, customer_data, SUMMARY_ROW)
+        fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
         # --- グラフ更新（ChartServiceを利用） ---
         chart_data = self.chart_service.get_item_vs_customer(d, item_id)
-        self._update_chart(chart_data)
+        # self._update_chart(chart_data)
+        self._refresh_chart()

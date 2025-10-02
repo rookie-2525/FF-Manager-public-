@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QDialog,
 )
 
+
 from ff_manager.config import (TEST_MODE,WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
 from ff_manager.core.constants import TAB_INDEX
 
@@ -18,7 +19,7 @@ from ff_manager.services.metrics_service import MetricsService
 
 from ff_manager.ui.panels import build_buttons_column,ButtonType
 from ff_manager.ui.styles import apply_table_style
-from ff_manager.ui.edit_grid_widget import EditGridWidget
+from ff_manager.ui.edit_grid.edit_grid_widget import EditGridWidget
 from ff_manager.ui.items_widget import ItemsWidget
 from ff_manager.ui.menu_widget import MenuWidget
 from ff_manager.ui.charts_widget import ChartsWidget
