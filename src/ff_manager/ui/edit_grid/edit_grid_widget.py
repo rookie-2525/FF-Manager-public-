@@ -138,6 +138,15 @@ class EditGridWidget(QWidget):
                 try: int(text)
                 except Exception: item.setText("0")
 
+    def _shift_item(self,idx:int=0):
+
+        current_index = self.item_combo.currentIndex()
+
+        # 範囲チェック
+        if current_index+idx>0 and current_index+idx<self.item_combo.count():
+            self.item_combo.setCurrentIndex(current_index + idx)
+
+
     def _init_header(self):
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)
@@ -154,10 +163,17 @@ class EditGridWidget(QWidget):
         self.item_combo = QComboBox()
         self.item_combo.setEditable(False)
         self._reload_items()
+        self.btn_prev_item=QPushButton("<")
+        self.btn_next_item=QPushButton(">")
 
 
-
-        for btn in (self.btn_prev_month, self.btn_prev_day, self.btn_next_day, self.btn_next_month):
+        for btn in (
+            self.btn_prev_month, 
+            self.btn_prev_day, 
+            self.btn_next_day, 
+            self.btn_next_month,
+            self.btn_prev_item,
+            self.btn_next_item):
             btn.setFixedSize(28, 24)
 
         # グラフボタン
@@ -239,7 +255,9 @@ class EditGridWidget(QWidget):
 
         item_form=QHBoxLayout()
         item_form.addWidget(QLabel("商品:"))
+        item_form.addWidget(self.btn_prev_item)
         item_form.addWidget(self.item_combo)
+        item_form.addWidget(self.btn_next_item)
         item_form.addStretch()
 
         item_grid = QVBoxLayout()
@@ -278,6 +296,10 @@ class EditGridWidget(QWidget):
         # 日付や商品が変わったら自動読み込み
         self.date_edit.dateChanged.connect(self.reload_all)
         self.item_combo.currentTextChanged.connect(self.reload_all)
+
+        # 商品移動
+        self.btn_prev_item.clicked.connect(lambda: self._shift_item(idx=-1))
+        self.btn_next_item.clicked.connect(lambda: self._shift_item(idx=1))
 
         # self.btn_chart.clicked.connect(lambda: stacked_widget.setCurrentIndex(TAB_INDEX["CHARTS"]))
 
@@ -339,7 +361,7 @@ class EditGridWidget(QWidget):
         if not d or not name:
             clear_table(self.item_table)
             clear_table(self.summary_table)
-            self._update_chart({"prepared":[],"sold":[],"discarded":[],"stock":[],"customer":[]})
+            self._refresh_chart()            
             return
 
         item_id = self.metrics_service.get_item_id_by_name(name)
