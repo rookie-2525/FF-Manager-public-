@@ -52,10 +52,3 @@ class ChartArea:
         self.ax2.legend(loc="upper right")
 
         self.canvas.draw()
-
-    # ---------------- Internal ----------------
-    # def _toggle(self, checked: bool):
-    #     self.canvas.setVisible(checked)
-    #     if checked:
-    #         # 親ウィジェットに更新処理を委譲
-    #         self.parent.refresh_chart()

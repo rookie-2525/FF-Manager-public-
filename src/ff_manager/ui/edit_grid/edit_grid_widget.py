@@ -52,44 +52,21 @@ class EditGridWidget(QWidget):
         self.metrics_service = metrics_service
         self.chart_service=chart_service
 
-        # # ==== header ====
-        # self._init_header()
-
-
-        # # ==== grid ====
-        # self.summary_table = init_summary_table(SUMMARY_ROWS, SUMMARY_LABELS_JA)
-        # self.item_table = init_item_table(ITEM_METRICS, ITEM_LABELS_JA)
-        
-        # # ==== グラフエリア ====
-        # self.chart_area = ChartArea(self)
-
-        # # ==== layout ====
-        # self._init_layout(stacked_widget)
-
-
-        # #=== signal ===
-        # self._init_signal(stacked_widget)
-
-        # clear_table(self.summary_table)
-        # clear_table(self.item_table)
-        # self.load_item_and_summary()
-
-        # 子コンポーネント
+        # ==== table ====
         self.summary_table = init_summary_table(SUMMARY_ROWS, SUMMARY_LABELS_JA)
         self.item_table = init_item_table(ITEM_METRICS, ITEM_LABELS_JA)
-        self.chart_area = ChartArea(self)
 
-        # UI 初期化
+        # ==== ui ====
+        self.chart_area = ChartArea(self)
         self._init_header()
         self._init_footer()
         self._init_layout(stacked_widget)
 
+        
+        self.load_item_and_summary()
+
         # signal
         self._connect_signals(stacked_widget)
-
-        clear_table(self.summary_table)
-        clear_table(self.item_table)
-        self.load_item_and_summary()
 
     # ========== public API ==========
 
@@ -143,7 +120,7 @@ class EditGridWidget(QWidget):
         current_index = self.item_combo.currentIndex()
 
         # 範囲チェック
-        if current_index+idx>0 and current_index+idx<self.item_combo.count():
+        if current_index+idx >= 0 and current_index+idx < self.item_combo.count():
             self.item_combo.setCurrentIndex(current_index + idx)
 
 
@@ -187,19 +164,6 @@ class EditGridWidget(QWidget):
         self.btn_revert = QPushButton("やり直し")
         self.btn_back = QPushButton("戻る")
 
-    # ---------------- Chart ----------------
-    # def _init_chart_area(self):
-    #     """グラフ描画用ウィジェットの初期化"""
-    #     self.figure = Figure(figsize=(4, 2))
-    #     self.item_canvas = FigureCanvas(self.figure)
-    #     self.ax = self.item_canvas.figure.subplots()
-    #     self.ax2 = self.ax.twinx()  # 右軸を最初に作って保持
-    #     self.item_canvas.setVisible(False)  # 初期は非表示
-
-    #     self.btn_chart = QPushButton("グラフ")
-    #     self.btn_chart.setCheckable(True)  # 折り畳み用トグル
-    #     self.btn_chart.toggled.connect(self._toggle_chart)
-
 
     def _toggle_chart(self, checked: bool):
         self.chart_area.widget().setVisible(checked)
@@ -216,26 +180,6 @@ class EditGridWidget(QWidget):
         data = self.chart_service.get_item_vs_customer(d, item_id)
         self.chart_area.refresh(data)
  
-    # def _update_chart(self, data: dict):
-    #     self.ax.clear()
-    #     self.ax2.clear()
-    #     self.ax.set_xticks(HOURS)
-
-    #     # 左軸: 商品メトリクス
-    #     for m,la in ITEM_LABELS_JA.items():
-    #         self.ax.plot(HOURS, data[m], label=la)
-    #     self.ax.set_ylim(0,20)
-
-    #     # 右軸: 客数
-    #     self.ax2.plot(HOURS, data["customer"], color="black", linestyle="--", label="客数")
-    #     self.ax2.set_ylim(0,200)
-
-    #     self.ax.set_xlabel("Hour")
-    #     self.ax.set_ylabel("Count")
-    #     self.ax.legend(loc="upper left")
-    #     self.ax2.legend(loc="upper right")
-
-    #     self.item_canvas.draw()
 
     # ---------------- layout ----------------
     def _init_layout(self,stack:QStackedWidget):
@@ -379,7 +323,5 @@ class EditGridWidget(QWidget):
         fill_table(self.summary_table, customer_data, SUMMARY_ROW)
         fill_table(self.summary_table, data["summary"], SUMMARY_ROW)
 
-        # --- グラフ更新（ChartServiceを利用） ---
-        chart_data = self.chart_service.get_item_vs_customer(d, item_id)
-        # self._update_chart(chart_data)
+        # --- グラフ更新 ---
         self._refresh_chart()
