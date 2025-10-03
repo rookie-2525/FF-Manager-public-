@@ -1,24 +1,17 @@
 # ui/main_window.py
 import sys
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QStackedWidget,
-    QPushButton, QTableView, QMessageBox, QAbstractItemView, QSplitter, QHeaderView,
-    QDialog,
+    QMainWindow, QStackedWidget, QMessageBox
 )
-
-
-from ff_manager.config import (TEST_MODE,WINDOW_TITLE,WINDOW_SIZE,TABLE,HEADER_JP)
-from ff_manager.core.constants import TAB_INDEX
+from ff_manager.config import (WINDOW_TITLE,WINDOW_SIZE,TABLE)
 
 from ff_manager.db.migrations import ensure_schema_and_migrate
-from ff_manager.db.aggregate import rebuild_daily_for_date, normalize_date
+from ff_manager.db.aggregate import rebuild_daily_for_date
 from ff_manager.db.repositories.items_repo import ItemsRepository
 
 from ff_manager.services.chart_service import ChartService
 from ff_manager.services.metrics_service import MetricsService
 
-from ff_manager.ui.panels import build_buttons_column,ButtonType
-from ff_manager.ui.styles import apply_table_style
 from ff_manager.ui.edit_grid.edit_grid_widget import EditGridWidget
 from ff_manager.ui.items_widget import ItemsWidget
 from ff_manager.ui.menu_widget import MenuWidget
@@ -61,7 +54,6 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))
         self.setCentralWidget(self.stack)
 
-        # self.grid = EditGridWidget(self.db,self.stack)
         self.setCentralWidget(self.stack)
 
    

@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-# from ff_manager.services.chart_service import ChartService
+
 
 class ChartsWidget(QWidget):
     def __init__(self, chart_service,stacked_widget, parent=None):

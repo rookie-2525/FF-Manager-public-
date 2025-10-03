@@ -6,7 +6,7 @@ from ff_manager.db.repositories.metrics_repo import MetricsRepository
 from ff_manager.db.repositories.items_repo import ItemsRepository
 
 from ff_manager.core.constants import (
-    HOURS,ITEM_METRICS,ITEM_LABELS_JA,ITEM_ROW,SUMMARY_ROWS,SUMMARY_ROW,SUMMARY_LABELS_JA
+    HOURS,ITEM_METRICS,ITEM_ROW,SUMMARY_ROWS,SUMMARY_ROW
     )
 
 class MetricsService:
