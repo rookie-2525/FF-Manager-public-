@@ -17,7 +17,10 @@ class OCRImportWidget(QWidget):
         self.text     = QTextEdit()
 
         top = QHBoxLayout()
-        top.addWidget(self.btn_open); top.addWidget(self.btn_ocr); top.addStretch(); top.addWidget(self.btn_save)
+        top.addWidget(self.btn_open)
+        top.addWidget(self.btn_ocr)
+        top.addStretch()
+        top.addWidget(self.btn_save)
 
         lay = QVBoxLayout(self)
         lay.addLayout(top)
