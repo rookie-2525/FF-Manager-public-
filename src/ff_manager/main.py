@@ -6,8 +6,11 @@ from ff_manager.config import DB_PATH
 from ff_manager.db.connection import get_db
 from ff_manager.ui.main_window import MainWindow
 
+from ff_manager.ui.styles.theme import load_qss
+
 def main():
     app = QApplication(sys.argv)
+    app.setStyleSheet(load_qss())  
     try:
         db = get_db(DB_PATH)
     except Exception as e:

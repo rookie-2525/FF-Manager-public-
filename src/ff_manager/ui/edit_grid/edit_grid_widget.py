@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem, QPushButton, QLabel, QMessageBox, QSizePolicy,QStackedWidget,
     QHeaderView
 )
-from PySide6.QtCore import Qt, QDate, Signal
+from PySide6.QtCore import Qt, QDate, Signal,QTimer
 from PySide6.QtGui import QIntValidator
 from PySide6.QtSql import QSqlQuery
 
@@ -30,6 +30,7 @@ from ff_manager.ui.edit_grid.tables import (
 )
 
 from ff_manager.ui.edit_grid.chart_area import ChartArea
+from ff_manager.ui.effects.gradient_bg import GradientBackground
 
 DEFAULT_DATE=(2025,1,1)
 
@@ -164,6 +165,10 @@ class EditGridWidget(QWidget):
         self.btn_revert = QPushButton("やり直し")
         self.btn_back = QPushButton("戻る")
 
+        for btn in (self.btn_save,self.btn_revert,self.btn_back):
+            btn.setFixedSize(58,42)
+
+
 
     def _toggle_chart(self, checked: bool):
         self.chart_area.widget().setVisible(checked)
@@ -217,11 +222,19 @@ class EditGridWidget(QWidget):
         foot.addWidget(self.btn_revert)
 
 
-        root = QVBoxLayout(self)
-        root.addLayout(summary_grid)
-        root.addLayout(item_grid)
-        root.addStretch()
-        root.addLayout(foot)
+        root=QVBoxLayout(self)
+        root.setContentsMargins(0,0,0,0)
+
+        bg=GradientBackground(self)
+        root.addWidget(bg)
+
+        panel = QVBoxLayout(bg.content)
+        panel.setContentsMargins(20,20,20,20)
+        panel.addLayout(summary_grid)
+        panel.addLayout(item_grid)
+        panel.addStretch()
+        panel.addLayout(foot)
+
 
     # ---------------- signal ----------------
     def _connect_signals(self,stack:QStackedWidget):

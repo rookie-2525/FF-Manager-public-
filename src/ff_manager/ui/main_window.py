@@ -13,9 +13,9 @@ from ff_manager.services.chart_service import ChartService
 from ff_manager.services.metrics_service import MetricsService
 
 from ff_manager.ui.edit_grid.edit_grid_widget import EditGridWidget
-from ff_manager.ui.items_widget import ItemsWidget
-from ff_manager.ui.menu_widget import MenuWidget
-from ff_manager.ui.charts_widget import ChartsWidget
+from ff_manager.ui.items_widget.items_widget import ItemsWidget
+from ff_manager.ui.menu_widget.menu_widget import MenuWidget
+from ff_manager.ui.chart_widget.charts_widget import ChartsWidget
 
 class MainWindow(QMainWindow):
     def __init__(self, db):
@@ -40,18 +40,19 @@ class MainWindow(QMainWindow):
         self.chart_service = ChartService(db)
 
         self.stack = QStackedWidget()
-        # menu
-        self.stack.addWidget(MenuWidget(self.stack))                
-        # items
-        self.stack.addWidget(ItemsWidget(self.db,self.stack))       
-        # edit
+
+        self.stack.addWidget(MenuWidget(self.stack))    # menu
+
+        self.stack.addWidget(ItemsWidget(self.db,self.stack))   # items
+        
         self.stack.addWidget(EditGridWidget(
              self.metrics_service,
              self.chart_service,
              self.items_repo,
              self.stack))    # edit
-        # chart
-        self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))
+        
+        self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))   # chart
+        
         self.setCentralWidget(self.stack)
 
         self.setCentralWidget(self.stack)

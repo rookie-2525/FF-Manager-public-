@@ -35,6 +35,7 @@ class ItemsWidget(QWidget):
         self.model.select()
 
         self.view = QTableView()
+        self.view.setObjectName("dataTable")
         self.view.setModel(self.model)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setSelectionMode(QAbstractItemView.SingleSelection)

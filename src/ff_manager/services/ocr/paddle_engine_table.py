@@ -1,37 +1,42 @@
 # services/ocr/paddle_engine_table.py
-from paddleocr._pipelines import PPStructureV3
 import cv2
+import numpy as np
+from ff_manager.services.ocr.preprocess import preprocess_for_ocr,_deskew
+from paddleocr import TableCellsDetection
+from PIL import Image
+import tempfile
+from pathlib import Path
 import os
 
 class PaddleTableEngine:
-    def __init__(self, lang: str = "japan", det_limit_side_len: int = 960, use_gpu=True):
-        """
-        PaddleOCR の表構造解析エンジン（PPStructureV3）を初期化
-        """
-        # self.engine = PPStructureV3(
-        #     lang=lang,
-        #     show_log=True,
-        #     layout=False,  # 表構造に特化
-        #     det_limit_side_len=det_limit_side_len,
-        #     device='gpu' if use_gpu else 'cpu'
-        # )
-        self.engine=PPStructureV3(device="cpu")
-    
+    def __init__(self):
+        # ===== 1. モデル準備 =====
+        self.model = TableCellsDetection(model_name="RT-DETR-L_wired_table_cell_det")
+
+
+
+
+
+
     def run(self, img_path: str,out_img_path:str):
-        """画像を解析してテーブル構造を返す"""
 
-        results = self.engine.predict(img_path)
+        pil_img=Image.open(img_path).convert("RGB")
 
-        res = results[0]  # 最初の表を取り出す
-        table_res_list = res.get("table_res_list", [])
 
-        # 最初の表のHTML構造を取得
-        html = table_res_list[0].get("pred_html", "") if table_res_list else ""
+        # 前処理
+        if pil_img.mode != "RGB":
+            pil_img = pil_img.convert("RGB")
 
-        # HTMLを保存
-        if html:
-            with open(out_img_path, "w", encoding="utf-8") as f:
-                f.write(html)
-            print("✅ HTMLファイルに出力しました: output_table.html")
-        else:
-            print("⚠️ 表のHTMLが検出されませんでした。")
+        img=self.preproc(pil_img,out_img_path)
+
+
+        # output = self.model.predict(img.name, threshold=0.3, batch_size=1)
+        # # 一時ファイルに保存してパス渡し
+        # with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        #     cv2.imwrite(tmp.name, img)
+        #     output = self.model.predict(tmp.name, threshold=0.3, batch_size=1)
+        
+
+        # for res in output:
+        #     res.save_to_img(out_img_path)
+

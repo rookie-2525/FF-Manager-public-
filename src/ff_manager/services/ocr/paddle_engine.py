@@ -10,7 +10,7 @@ class PaddleEngine:
         """
         img: numpy ndarray (BGR or GRAY) / file path 両方OK
         """
-        res = self.ocr.ocr(img, cls=True)
+        res = self.ocr.predict(img, cls=True)
         lines = []
         for page in res:
             for box, (txt, conf) in page:

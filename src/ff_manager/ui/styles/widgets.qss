@@ -1,0 +1,32 @@
+/* styles/widgets.qss*/
+QTableView#dataTable {
+    background: rgba(236, 236, 236, 1);                  /* セル地色（明るいグレー）*/
+    alternate-background-color: rgba(227, 231, 234, 1);  /* 交互行グレー */
+    color: rgba(17, 17, 17, 1);                           /* 文字色 */
+    gridline-color: rgba(201, 209, 214, 1);               /* 罫線色 */
+    selection-background-color: rgba(139, 198, 191, 1);   /* 選択時の背景 */
+    selection-color: rgba(15, 32, 39, 1);              /* 選択時の文字 */
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+}
+
+QTableView#dataTable::item {
+    padding: 4px;                          /* セル内パディング（任意）*/
+}
+
+/* ヘッダ（上・左） */
+QHeaderView::section {
+    background: rgba(81, 79, 109, 0.7);                   /* 濃いめグレー */
+    color: #EAEFF2;
+    padding: 6px 8px;
+    border: none;                          /* 罫線を消す（好みで）*/
+}
+QTableCornerButton::section {               /* 左上の角の三角部分 */
+    background: rgba(81, 79, 109, 0.6);
+    border: none;
+}
+
+/* フォーカス枠の主張を弱くする */
+QTableView#dataTable:focus {
+    outline: none;
+}

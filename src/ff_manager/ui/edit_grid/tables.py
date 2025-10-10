@@ -1,5 +1,5 @@
 # tables.py
-from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView,QTableView
 from PySide6.QtGui import QIntValidator
 from PySide6.QtCore import Qt
 
@@ -13,6 +13,8 @@ def init_summary_table(summary_rows, summary_labels) -> QTableWidget:
     table = QTableWidget(len(summary_rows), len(HOURS) + 1)
     table.setHorizontalHeaderLabels([str(h) for h in HOURS] + ["合計"])
     table.setVerticalHeaderLabels([summary_labels[m] for m in summary_rows])
+
+    table.setObjectName("dataTable")
 
     validator = QIntValidator(0, 1_000_000, table)
     for r in range(table.rowCount()):
@@ -30,8 +32,8 @@ def init_summary_table(summary_rows, summary_labels) -> QTableWidget:
     table.itemChanged.connect(lambda item: sanitize_int_item(item, validator))
 
     table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+    table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
     return table
-
 
 def init_item_table(item_metrics, item_labels) -> QTableWidget:
     """
@@ -40,6 +42,8 @@ def init_item_table(item_metrics, item_labels) -> QTableWidget:
     table = QTableWidget(len(item_metrics), len(HOURS) + 1)
     table.setHorizontalHeaderLabels([str(h) for h in HOURS] + ["合計"])
     table.setVerticalHeaderLabels([item_labels[m] for m in item_metrics])
+
+    table.setObjectName("dataTable")
 
     validator = QIntValidator(0, 1_000_000, table)
     for r in range(table.rowCount()):
@@ -51,6 +55,7 @@ def init_item_table(item_metrics, item_labels) -> QTableWidget:
     table.itemChanged.connect(lambda item: sanitize_int_item(item, validator))
 
     table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+    table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
     return table
 
 
@@ -98,3 +103,4 @@ def fill_table(table: QTableWidget, data: dict, row_map: dict):
     for r in range(table.rowCount()):
         total = sum(int(table.item(r, c).text()) for c in range(24))
         table.item(r, 24).setText(str(total))
+
