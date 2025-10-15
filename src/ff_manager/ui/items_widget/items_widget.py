@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtSql import QSqlTableModel, QSqlQuery
 
 from ff_manager.db.repositories.items_repo import ItemsRepository
+from ff_manager.ui.effects.gradient_bg import GradientBackground
 
 class ItemsWidget(QWidget):
     def __init__(self, db,stacked_widget, parent=None):
@@ -64,11 +65,32 @@ class ItemsWidget(QWidget):
         btns.addWidget(self.btn_save)
         btns.addWidget(self.btn_revert)
 
+
+        for btn in (
+            self.btn_add, 
+            self.btn_delete, 
+            self.btn_save, 
+            self.btn_revert,
+            self.btn_back):
+            btn.setFixedSize(58, 32)
+
+
         # ==== layout ====
-        layout = QVBoxLayout(self)
-        layout.addLayout(search_layout)
-        layout.addWidget(self.view)
-        layout.addLayout(btns)
+        root=QVBoxLayout(self)
+        root.setContentsMargins(0,0,0,0)
+        
+        bg=GradientBackground(self)
+        root.addWidget(bg)
+
+        panel = QVBoxLayout(bg.content)
+        panel.setContentsMargins(20,20,20,20)
+
+        panel.addLayout(search_layout)
+        panel.addWidget(self.view)
+        panel.addLayout(btns)
+
+
+
 
         # ==== signal ====
         self.btn_add.clicked.connect(self.on_add_item)

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class OCRService:
     def __init__(self, db, timeout_sec: int = 10):
         self.engine = PaddleEngine(lang="japan", use_angle_cls=True)
-        self.engine_table=PaddleTableEngine(lang="japan")
+        # self.engine_table=PaddleTableEngine(lang="japan")
         self.cache = OCRCacheRepo(db)
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.timeout = timeout_sec

@@ -166,7 +166,7 @@ class EditGridWidget(QWidget):
         self.btn_back = QPushButton("戻る")
 
         for btn in (self.btn_save,self.btn_revert,self.btn_back):
-            btn.setFixedSize(58,42)
+            btn.setFixedSize(58,32)
 
 
 

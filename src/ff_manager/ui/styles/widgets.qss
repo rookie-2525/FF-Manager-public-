@@ -1,6 +1,6 @@
 /* styles/widgets.qss*/
 QTableView#dataTable {
-    background: rgba(236, 236, 236, 1);                  /* セル地色（明るいグレー）*/
+    background: rgba(204, 204, 204, 1);                  /* セル地色（明るいグレー）*/
     alternate-background-color: rgba(227, 231, 234, 1);  /* 交互行グレー */
     color: rgba(17, 17, 17, 1);                           /* 文字色 */
     gridline-color: rgba(201, 209, 214, 1);               /* 罫線色 */
