@@ -6,6 +6,7 @@ TAB_INDEX = {
     "ITEMS": 1,
     "EDIT": 2,
     "CHARTS": 3,
+    "OCR": 4,
 }
 
 

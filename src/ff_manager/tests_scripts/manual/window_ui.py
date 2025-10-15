@@ -6,7 +6,7 @@ import sys
 
 from ff_manager.config import DB_PATH
 from ff_manager.db.connection import get_db
-from ff_manager.ui.ocr_import_widget import OCRImportWidget
+from ff_manager.ui.ocr_import.ocr_import_widget import OCRImportWidget
 
 
 def main():

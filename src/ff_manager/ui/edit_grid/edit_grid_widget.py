@@ -31,6 +31,7 @@ from ff_manager.ui.edit_grid.tables import (
 
 from ff_manager.ui.edit_grid.chart_area import ChartArea
 from ff_manager.ui.effects.gradient_bg import GradientBackground
+from ff_manager.ui.ocr_import import ocr_import_widget
 
 DEFAULT_DATE=(2025,1,1)
 
@@ -144,6 +145,8 @@ class EditGridWidget(QWidget):
         self.btn_prev_item=QPushButton("<")
         self.btn_next_item=QPushButton(">")
 
+        self.btn_read_img=QPushButton("画像から読み取り")
+
 
         for btn in (
             self.btn_prev_month, 
@@ -197,6 +200,7 @@ class EditGridWidget(QWidget):
         date_form.addWidget(self.btn_next_day)
         date_form.addWidget(self.btn_next_month)
         date_form.addStretch()
+        date_form.addWidget(self.btn_read_img)
 
         summary_grid=QVBoxLayout()
         summary_grid.addLayout(date_form)
@@ -257,6 +261,9 @@ class EditGridWidget(QWidget):
         # 商品移動
         self.btn_prev_item.clicked.connect(lambda: self._shift_item(idx=-1))
         self.btn_next_item.clicked.connect(lambda: self._shift_item(idx=1))
+
+
+        self.btn_read_img.clicked.connect(lambda: stack.setCurrentIndex(TAB_INDEX["OCR"]))
 
         # self.btn_chart.clicked.connect(lambda: stacked_widget.setCurrentIndex(TAB_INDEX["CHARTS"]))
 

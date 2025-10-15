@@ -13,9 +13,10 @@ from ff_manager.services.chart_service import ChartService
 from ff_manager.services.metrics_service import MetricsService
 
 from ff_manager.ui.edit_grid.edit_grid_widget import EditGridWidget
-from ff_manager.ui.items_widget.items_widget import ItemsWidget
-from ff_manager.ui.menu_widget.menu_widget import MenuWidget
+from ff_manager.ui.items.items_widget import ItemsWidget
+from ff_manager.ui.menu.menu_widget import MenuWidget
 from ff_manager.ui.chart_widget.charts_widget import ChartsWidget
+from ff_manager.ui.ocr_import.ocr_import_widget import OCRImportWidget
 
 class MainWindow(QMainWindow):
     def __init__(self, db):
@@ -53,9 +54,11 @@ class MainWindow(QMainWindow):
         
         self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))   # chart
         
-        self.setCentralWidget(self.stack)
+        self.stack.addWidget(OCRImportWidget(db,self.stack))   # ocr
+
 
         self.setCentralWidget(self.stack)
+
 
    
     def _on_saved(self, date_iso: str):
