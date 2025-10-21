@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ffm-ocr"
+version = "0.1.0"
+description = "Table cell detection + OCR pipeline"
+authors = ["You <you@example.com>"]
+packages = [{ include = "ffm_ocr" }] 
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+paddleocr = "^2.7"
+opencv-python = "^4.9"
+numpy = "^2.0"
+
+[tool.poetry.scripts]
+ffm-ocr = "ffm_ocr.cli:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
