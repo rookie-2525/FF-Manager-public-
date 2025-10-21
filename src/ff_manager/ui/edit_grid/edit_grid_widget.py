@@ -70,6 +70,8 @@ class EditGridWidget(QWidget):
         # signal
         self._connect_signals(stacked_widget)
 
+
+
     # ========== public API ==========
 
     def setDate(self, qdate: QDate):
@@ -274,8 +276,8 @@ class EditGridWidget(QWidget):
         d = self._date_iso()
         name = self._item_name()
         if not d or not name:
-            self.clear_table(self.item_table)
-            self.clear_table(self.summary_table)
+            clear_table(self.item_table)
+            clear_table(self.summary_table)
             return
 
         item_id = self.metrics_service.get_item_id_by_name(name)

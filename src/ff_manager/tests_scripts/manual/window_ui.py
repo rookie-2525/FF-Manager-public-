@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget,QMessageBox, QVBoxLayout, QHBoxLayout, QLabel,
-    QTableWidget, QTableWidgetItem, QGroupBox, QGridLayout, QPushButton
+    QTableWidget, QTableWidgetItem, QGroupBox, QGridLayout, QPushButton,
+    QStackedWidget
 )
 import sys
 
@@ -8,6 +9,7 @@ from ff_manager.config import DB_PATH
 from ff_manager.db.connection import get_db
 from ff_manager.ui.ocr_import.ocr_import_widget import OCRImportWidget
 
+from ff_manager.config import (WINDOW_SIZE)
 
 def main():
     app = QApplication(sys.argv)
@@ -16,10 +18,12 @@ def main():
     except Exception as e:
         QMessageBox.critical(None, "DB Error", str(e))
         sys.exit(1)
-    w = OCRImportWidget(db)
-    # w=QWidget()
-    w.resize(1000, 400)
-    w.show()
+
+    stack=QStackedWidget()
+    stack.addWidget(OCRImportWidget(db,stack))
+    # w = OCRImportWidget(db)
+    stack.resize(WINDOW_SIZE[0], WINDOW_SIZE[1])
+    stack.show()
     sys.exit(app.exec())
 
 
