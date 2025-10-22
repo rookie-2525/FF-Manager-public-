@@ -1,13 +1,23 @@
 # ui/ocr_import_widget.py
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal,Qt
+from PySide6.QtGui import QIntValidator,QPixmap
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-                                QTextEdit, QFileDialog,QTableWidget,
+                                QTextEdit, QFileDialog,QTableWidget,QTableWidget, 
+                                QTableWidgetItem, QHeaderView,QTableView
 )
-from PySide6.QtGui import QPixmap
 from PIL import Image
 # from ff_manager.services.ocr.service import OCRService
 from ff_manager.ui.effects.gradient_bg import GradientBackground
-from ff_manager.core.constants import TAB_INDEX
+from ff_manager.core.constants import (
+    HOURS, ITEM_METRICS,ITEM_LABELS_JA, ITEM_ROW, SUMMARY_ROWS,SUMMARY_LABELS_JA, SUMMARY_ROW
+    ,TAB_INDEX
+    )
+from ff_manager.ui.edit_grid.tables import sanitize_int_item
+from ffm_ocr.schemas import OcrImportPayload
+
+from ff_manager.services.ocr.fakes import FakePipeline
+from ff_manager.services.ocr.ocr_adapter import OcrAdapter
+from ff_manager.config import OCR_TEST
 
 class OCRImportWidget(QWidget):
 
@@ -17,29 +27,7 @@ class OCRImportWidget(QWidget):
         super().__init__(parent)
         
         # self.svc = OCRService(db)
-
-        self._parsed_item: dict[str, dict[int, int]] = {}  # 取り込み用バッファ
-
-
-        # # --- table ---
-        # table = QTableWidget(len(item_metrics), len(HOURS) + 1)
-        # table.setHorizontalHeaderLabels([str(h) for h in HOURS] + ["合計"])
-        # table.setVerticalHeaderLabels([item_labels[m] for m in item_metrics])
-
-        # table.setObjectName("dataTable")
-
-        # validator = QIntValidator(0, 1_000_000, table)
-        # for r in range(table.rowCount()):
-        #     for c in range(table.columnCount()):
-        #         it = QTableWidgetItem("0")
-        #         it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        #         it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
-        #         table.setItem(r, c, it)
-        # table.itemChanged.connect(lambda item: sanitize_int_item(item, validator))
-
-        # table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        # table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
+        self.ocr = OcrAdapter(pipeline=FakePipeline() if OCR_TEST else None)
 
 
         self.btn_open = QPushButton("画像を開く")
@@ -73,7 +61,8 @@ class OCRImportWidget(QWidget):
         panel = QVBoxLayout(bg.content)
         panel.addLayout(top)
         panel.addWidget(self.preview)
-        panel.addWidget(self.text)
+        # panel.addWidget(self.text)
+        # panel.addWidget(table)
         panel.addLayout(foot)
 
         self.current_image: Image.Image | None = None
@@ -140,3 +129,26 @@ class OCRImportWidget(QWidget):
                 if hour_vals:
                     metrics[metric] = hour_vals
             return metrics
+
+
+    def _create_table(table_num:int):
+        result={}
+
+        for i in range(table_num):
+            table = QTableWidget(len(ITEM_METRICS), len(HOURS) + 1)
+            table.setHorizontalHeaderLabels([str(h) for h in HOURS] + ["合計"])
+            table.setVerticalHeaderLabels([ITEM_LABELS_JA[m] for m in ITEM_METRICS])
+
+            table.setObjectName("dataTable")
+
+            validator = QIntValidator(0, 1_000_000, table)
+            for r in range(table.rowCount()):
+                for c in range(table.columnCount()):
+                    it = QTableWidgetItem("0")
+                    it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                    it.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEditable | Qt.ItemIsEnabled)
+                    table.setItem(r, c, it)
+            table.itemChanged.connect(lambda item: sanitize_int_item(item, validator))
+
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)

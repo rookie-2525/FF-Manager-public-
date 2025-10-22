@@ -3,7 +3,7 @@ import os
 from matplotlib import rcParams, font_manager
 
 TEST_MODE = os.getenv("TEST_MODE", "0") == "1"
-
+OCR_TEST = os.getenv("OCR_TEST", "0") == "1"
 
 # --- 環境ごとのフォント設定 ---
 if os.name == "nt":  # Windows
