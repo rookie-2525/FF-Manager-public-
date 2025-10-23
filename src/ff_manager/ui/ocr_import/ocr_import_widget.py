@@ -1,11 +1,16 @@
 # ui/ocr_import_widget.py
 from PySide6.QtCore import Signal,Qt
 from PySide6.QtGui import QIntValidator,QPixmap
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-                                QTextEdit, QFileDialog,QTableWidget,QTableWidget, 
-                                QTableWidgetItem, QHeaderView,QTableView
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+    QTextEdit, QFileDialog,QTableWidget,QTableWidget, 
+    QTableWidgetItem, QHeaderView,QTableView,QMessageBox,
 )
 from PIL import Image
+
+import numpy as np
+from datetime import date
+
 # from ff_manager.services.ocr.service import OCRService
 from ff_manager.ui.effects.gradient_bg import GradientBackground
 from ff_manager.core.constants import (
@@ -28,6 +33,11 @@ class OCRImportWidget(QWidget):
         
         # self.svc = OCRService(db)
         self.ocr = OcrAdapter(pipeline=FakePipeline() if OCR_TEST else None)
+        self.ocr.finished.connect(self._on_ocr_done)
+        self.ocr.failed.connect(self._on_ocr_failed)
+
+
+
 
 
         self.btn_open = QPushButton("画像を開く")
@@ -68,9 +78,25 @@ class OCRImportWidget(QWidget):
         self.current_image: Image.Image | None = None
 
         self.btn_open.clicked.connect(self._open)
-        # self.btn_ocr.clicked.connect(self._run_ocr)
+        self.btn_ocr.clicked.connect(self._run_ocr)
         self.btn_save.clicked.connect(self._save)
         self.btn_back.clicked.connect(lambda: stack.setCurrentIndex(TAB_INDEX["EDIT"]))
+
+    def on_click_run_ocr(self):
+        qimg = self.image_preview.currentQImage()               # あなたの画像取得方法に合わせて
+        target_date = self.datePicker.date().toPython()         # QDateEdit等から
+        self.ocr.run_on_qimage(qimg, target_date=target_date)   # 非同期開始
+
+    def _on_ocr_done(self, payload):
+        pass
+        product = self.productCombo.currentText()
+        d = self.ocr.to_editgrid_item_dict(payload, product_name=product)
+        self.table.clear_table(self.item_table)
+        fill_table(self.item_table, d, ITEM_ROW)
+
+    def _on_ocr_failed(self, msg: str):
+        QMessageBox.warning(self, "OCR失敗", msg)
+
 
     def _open(self):
         path, _ = QFileDialog.getOpenFileName(self, "画像を選択", "", "Images (*.png *.jpg *.jpeg *.tif)")
@@ -81,9 +107,20 @@ class OCRImportWidget(QWidget):
         self.text.clear()
 
     def _run_ocr(self):
-        if not self.current_image: return
-        res = self.svc.recognize(self.current_image)
-        self.text.setPlainText(res.full_text)
+        # if not self.current_image: return
+        # res = self.svc.recognize(self.current_image)
+        # self.text.setPlainText(res.full_text)
+        
+        
+        # if self.current_image is None:
+        #     return
+        # rgb = np.array(self.current_image, copy=True)   # (H,W,3) RGB
+        # bgr = rgb[:, :, ::-1]                          # OpenCV/PaddleはBGR想定
+        
+        bgr = np.zeros((800, 600, 3), dtype=np.uint8)
+
+
+        self.ocr.run_on_ndarray(bgr, target_date=date(2025,1,1),meta={"source":"dummy"})
 
     def _save(self):
         """

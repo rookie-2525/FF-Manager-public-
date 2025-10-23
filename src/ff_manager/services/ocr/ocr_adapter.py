@@ -4,7 +4,7 @@ from typing import Optional
 from ffm_ocr.pipeline import OcrPipeline
 from ffm_ocr.schemas import OcrImportPayload, ProductSeries
 # QImage→ndarray
-# from ff_manager.ui.utils.image import qimage_to_ndarray  
+from ff_manager.ui.utils.image import qimage_to_ndarray  
 from ff_manager.core.constants import ITEM_LABELS_JA
 
 class OcrAdapter(QObject):
@@ -18,9 +18,9 @@ class OcrAdapter(QObject):
         self.pipe = pipeline or OcrPipeline()
         self.pool = QThreadPool.globalInstance()
 
-    # def run_on_qimage(self, qimage, target_date, meta: Optional[dict]=None):
-    #     img = qimage_to_ndarray(qimage)     # BGR/RGB注意（ヘルパ内で吸収）
-    #     self._submit(img, target_date, meta or {})
+    def run_on_qimage(self, qimage, target_date, meta: Optional[dict]=None):
+        img = qimage_to_ndarray(qimage)     # BGR/RGB注意（ヘルパ内で吸収）
+        self._submit(img, target_date, meta or {})
 
     def run_on_ndarray(self, img_nd: np.ndarray, target_date, meta: Optional[dict]=None):
         self._submit(img_nd, target_date, meta or {})
