@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         
         self.stack.addWidget(ChartsWidget(self.chart_service,self.stack))   # chart
         
-        self.stack.addWidget(OCRImportWidget(db,self.stack))   # ocr
+        self.stack.addWidget(OCRImportWidget(self.metrics_service,self.stack))   # ocr
 
 
         self.setCentralWidget(self.stack)

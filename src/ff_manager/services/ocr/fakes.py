@@ -12,26 +12,26 @@ class FakePipeline:
         return []  # ダミー
 
     def to_payload(self, cells, target_date, meta=None):
-        # 固定の結果を返す（UIが表示できることが目的）
+        # 固定の結果を返す
         return OcrImportPayload(
             version="1.0",
-            date=target_date if isinstance(target_date, date) else date.today(),
+            date=date(2025,1,1),
             customers_by_hour={9: 18, 10: 22, 11: 35},
             products=[
                 ProductSeries(
                     name="商品A",
                     by_metric={
-                        "prep":    {9:12, 10:10, 11:8},
-                        "sales":   {9:11, 10:9,  11:9},
-                        "waste":   {10:1},
-                        "display": {9:12, 10:10, 11:8}
+                        "prepared":    {9:12, 10:10, 11:8},
+                        "sold":   {9:11, 10:9,  11:9},
+                        "discarded":   {10:1},
+                        "stock": {9:12, 10:10, 11:8}
                     }
                 ),
                 ProductSeries(
                     name="商品B",
                     by_metric={
-                        "prep":  {9:6, 10:6},
-                        "sales": {9:5, 10:7}
+                        "prepared":  {9:6, 10:6},
+                        "sold": {9:5, 10:7}
                     }
                 )
             ],
