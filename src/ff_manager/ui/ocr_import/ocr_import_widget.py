@@ -44,7 +44,7 @@ class OCRImportWidget(QWidget):
         super().__init__(parent)
         
         # self.svc = OCRService(db)
-
+        self.metrics_service=metrics_service
 
         self.ocr = OcrAdapter(pipeline=FakePipeline() if OCR_TEST else None)
         self.ocr.finished.connect(self._on_ocr_done)
@@ -146,11 +146,19 @@ class OCRImportWidget(QWidget):
 
     def _on_ocr_done(self, payload:OcrImportPayload):
         self.table_list=[QTableWidget]
-        for prod in payload.products:
-            table=init_item_table(ITEM_METRICS,ITEM_LABELS_JA)
-            tab_label = self._make_tab_label(prod)
+        date=self.ocr.get_date(payload)
 
-            for culmns,data_list in prod.by_metric.items():
+
+        item_info=self.ocr.get_item_info(payload)
+        for prod in item_info:
+            table=init_item_table(ITEM_METRICS,ITEM_LABELS_JA)
+            name:str=prod[0]
+            info:dict=prod[1]
+            id=self.metrics_service.get_item_id_by_name(name)
+            tab_label = self._make_tab_label(name)
+
+            self.metrics_service.save_item_metrics(date,id,info)
+            for culmns,data_list in info.items():
                 for data in data_list.items():
                     c=ITEM_ROW[culmns]
                     h,v=data[0],data[1]
@@ -159,7 +167,6 @@ class OCRImportWidget(QWidget):
             self.item_tabs.addTab(table, tab_label)
             self.table_list.append(table)
 
-        # self.table_list[0].item(0,0).setText("1")
         
 
     def _on_ocr_failed(self, msg: str):
@@ -192,14 +199,11 @@ class OCRImportWidget(QWidget):
 
     def _save(self):
         """
-        解析済みデータをEmitして、編集タブへ戻す。
-        EditGrid側で fill_table(..., ITEM_ROW) を呼んで反映する想定。
+        解析済みデータをデータベースに反映
         """
-        if not self._parsed_item:
-            return
-        self.imported_item.emit(self._parsed_item)
-        # 画面遷移（編集タブへ）
-        self.parent().setCurrentIndex(TAB_INDEX["EDIT"]) if hasattr(self.parent(), "setCurrentIndex") else None
+        
+
+
 
     def _make_tab_label(self, prod) -> str:
         """

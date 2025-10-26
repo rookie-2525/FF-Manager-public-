@@ -9,6 +9,8 @@ from ff_manager.config import DB_PATH
 from ff_manager.db.connection import get_db
 from ff_manager.ui.ocr_import.ocr_import_widget import OCRImportWidget
 
+from ff_manager.services.metrics_service import MetricsService
+
 from ff_manager.config import (WINDOW_SIZE)
 
 def main():
@@ -19,8 +21,10 @@ def main():
         QMessageBox.critical(None, "DB Error", str(e))
         sys.exit(1)
 
+    metrics_service=MetricsService(db)
+
     stack=QStackedWidget()
-    stack.addWidget(OCRImportWidget(db,stack))
+    stack.addWidget(OCRImportWidget(metrics_service,stack))
     # w = OCRImportWidget(db)
     stack.resize(WINDOW_SIZE[0], WINDOW_SIZE[1])
     stack.show()

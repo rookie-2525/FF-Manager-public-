@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Signal, QRunnable, Slot, QThreadPool
+from PySide6.QtCore import QObject, Signal, QRunnable, Slot, QThreadPool,QDate
 import numpy as np
 from typing import Optional
 from ffm_ocr.pipeline import OcrPipeline
@@ -32,15 +32,24 @@ class OcrAdapter(QObject):
         worker.progress.connect(self.progress)
         self.pool.start(worker)
 
-    def to_editgrid_item_dict(payload: OcrImportPayload, product_name: str) -> dict[str, dict[int,int]]:
-        prod = next((p for p in payload.products if p.name == product_name), None)
-        if not prod:
-            return {}
-        item: dict[str, dict[int,int]] = {}
-        for m, series in prod.by_metric.items():
-            item[ITEM_LABELS_JA[m]] = {int(h): int(v) for h, v in series.items()}
-        item[ITEM_LABELS_JA["customers"]] = {int(h): int(v) for h, v in payload.customers_by_hour.items()}
-        return item
+    def get_item_info(self,payload: OcrImportPayload) -> list[list[str,dict[str, dict[int,int]]]]:
+        ret=[]
+
+        for prod in payload.products:
+
+            info: dict[str, dict[int,int]] = {}
+            name=prod.name
+            for m, series in prod.by_metric.items():
+                info[m] = {int(h): int(v) for h, v in series.items()}
+            item=[name,info]
+            ret.append(item)
+        return ret
+
+    def get_date(self, payload: OcrImportPayload)->QDate:
+        d=payload.date
+        return QDate(d.year,d.month,d.day)
+    
+
 
 class _OcrWorker(QObject, QRunnable):
     finished = Signal(object)   # OcrImportPayload

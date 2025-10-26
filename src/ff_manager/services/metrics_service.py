@@ -92,6 +92,10 @@ class MetricsService:
             self.db.rollback()
             raise
 
+    def save_item_metrics(self, date_iso: str, item_id: int, data: Dict[str, Dict[int, int]]) -> None:
+        self.repo.upsert_item_metrics(date_iso,item_id,data)
+
+
     def _extract_table_data(self, table, row_map: dict) -> dict:
         """
         QTableWidget の内容を dict に変換する共通関数
