@@ -2,7 +2,6 @@
 name = "ffm-ocr"
 version = "0.1.0"
 description = "Table cell detection + OCR pipeline"
-authors = ["You <you@example.com>"]
 packages = [{ include = "ffm_ocr" }] 
 
 [tool.poetry.dependencies]
