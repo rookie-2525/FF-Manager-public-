@@ -43,12 +43,11 @@
 
 ## アーキテクチャ
 
-環境            ：poetry
-リポジトリ       :GitHub 
-UIフレームワーク ：PySide6            
-OCR             :PaddleOCR（PP-Structure） 
-DB              :SQLite3 
-その他          ：Pandas, Ruff, pre-commit など 
+- 環境：poetry
+- UIフレームワーク：PySide6            
+- OCR：PaddleOCR,OpenCV
+- DB：SQLite3 
+- ライブラリ：numpy,pandas,matplotlib
 
 ---
 
@@ -65,7 +64,7 @@ DB              :SQLite3
 
 1. GitHubからリポジトリを取得
 ```bash
-git clone https://github.com/rookie-2525/FFM-repositry.git
+git clone https://github.com/rookie-2525/FF-Manager-public-.git
 cd FFM-repositry
 ```
 2. python ^3.12.xの導入
