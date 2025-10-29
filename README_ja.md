@@ -6,12 +6,10 @@
 - [開発目的](#開発目的)
 - [主な機能](#主な機能)
 - [アーキテクチャ](#アーキテクチャ)
-- [対応環境](#対応環境)
+- [動作環境](#動作環境)
 - [セットアップ](#セットアップ)
 - [実行方法](#実行方法)
-- [テスト](#テスト)
-- [よくある質問（FAQ）](#よくある質問faq)
-- [ライセンス](#ライセンス)
+
 
 ## 概要
 
@@ -53,19 +51,19 @@
 
 ## 動作環境
 
-- python : ^>=3.12, <3.14
-- poetry : ^2.1.4
-- pyside6: ^6.9.2
-- sqlite3: ^3.45.3
-- windows 10 Home ^2009
+- python：^>=3.12, <3.14
+- poetry：^2.1.4
+- pyside6：^6.9.2
+- sqlite3：^3.45.3
+- windows 10 Home：^2009
 ---
 
-## 実行方法
+## セットアップ
 
 1. GitHubからリポジトリを取得
 ```bash
 git clone https://github.com/rookie-2525/FF-Manager-public-.git
-cd FFM-repositry
+cd FF-Manager-public-
 ```
 2. python ^3.12.xの導入
 **すでにpython(3.12.xから3.14.x)を導入済みの方は飛ばしてください**
@@ -77,18 +75,13 @@ https://www.python.org/downloads/release/python-3120/?utm_source=chatgpt.com
 **すでにpoetryを導入済みの方は飛ばしてください**
 ```bash
 curl -sSL https://install.python-poetry.org | python3 -
-#--------ターミナルを再起動--------#
-poetry env use 3.12
-poetry install
 ```
-4. スクリプトの実行
-```bash
-poetry run python src/ff_manager/main.py
-```
-
 ---
 
-## テストの実行
+## 実行方法
+- 通常起動
 ```bash
-poetry run pytest
+poetry env use 3.12
+poetry install
+poetry run python ff-manager
 ```
